@@ -103,3 +103,6 @@ instance (Sizeable s dims, ind ~ Coords s dims)
 instance (Sizeable s dims, ind ~ Coords s dims)
   => TraversableWithIndex ind (PGrid s dims) where
     itraverse = itraverseRep
+
+testGrid :: Grid '[2, 3] (Int)
+testGrid = tabulate (fromCoord (Proxy @'(Unsafe, '[2, 3])))
