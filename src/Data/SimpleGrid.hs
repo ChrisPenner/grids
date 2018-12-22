@@ -56,10 +56,14 @@ type NumericConstraints dims = (KnownNat (SizeOfDims dims))
 type Dims = [Int]
 
 toCoord' :: Dims -> Int -> [Int]
-toCoord' dims n = undefined
+toCoord' []       _ = []
+toCoord' [_     ] n = [n]
+toCoord' (_ : ds) n = (n `div` product ds) : toCoord' ds (n `mod` product ds)
 
 fromCoord' :: Dims -> [Int] -> Int
-fromCoord' dims coords = undefined
+fromCoord' _        []       = 1
+fromCoord' _        [c     ] = c
+fromCoord' (_ : ds) (c : cs) = c * product ds + fromCoord' ds cs
 
 class (NumericConstraints dims) => Sizeable (dims :: [Nat]) where
   toCoord :: Proxy dims -> Finite (SizeOfDims dims) -> Coords dims
