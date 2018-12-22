@@ -25,6 +25,7 @@ dependencies:
 - vector
 - adjunctions
 - lens
+- finite-typelits
 
 library:
   source-dirs: src

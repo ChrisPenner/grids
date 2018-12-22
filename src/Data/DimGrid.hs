@@ -37,13 +37,12 @@ type family SizeOfDims dims :: Nat where
   SizeOfDims (x:xs) = (x N.* SizeOfDims xs)
   SizeOfDims '[] = 1
 
-
 data x :*: y = x :*: y
   deriving Show
 
 infixr 9 :*:
 
-type family Coords (dims :: [Nat]) = result where
+type family Coords (dims :: [Nat]) where
   Coords '[_] = Int
   Coords '[] = ()
   Coords (_:xs) = Int :*: Coords xs
@@ -72,7 +71,6 @@ instance (KnownNat x, KnownNat (x N.* (y N.* SizeOfDims xs)), (Sizeable (y:xs)))
   toCoord _ i = (i `mod` currentDim) :*: toCoord (Proxy @(y:xs)) (i `div` currentDim)
     where
       currentDim = fromIntegral $ L.natVal (Proxy @x)
-      currentSize = sizeof (Proxy @(y:xs))
 
 instance (Sizeable dims, KnownNat (SizeOfDims dims)) => Representable (DimGrid dims) where
   type Rep (DimGrid dims) = Coords dims
