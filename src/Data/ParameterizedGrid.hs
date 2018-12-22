@@ -12,7 +12,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
 
 module Data.ParameterizedGrid where
 
@@ -27,6 +26,8 @@ import           Data.Kind
 import           GHC.TypeNats                  as N
 import           Data.Finite
 
+type Grid (dims :: [Nat]) a = PGrid Unsafe dims a
+type Grid' (dims :: [Nat]) a = PGrid Safe dims a
 
 newtype PGrid (s :: Safeness) (dims :: [Nat]) a =
   PGrid (V.Vector a)
@@ -66,6 +67,14 @@ class SafeToInt s n where
   safeToInt ::  Proxy '(s, n) -> WrapSafe s n -> Int
   safeFromInt ::  Proxy '(s, n) -> Int -> WrapSafe s n
 
+instance SafeToInt Unsafe n where
+  safeToInt _ i = i
+  safeFromInt _ i = i
+
+instance (KnownNat n) => SafeToInt Safe n where
+  safeToInt _ i = fromIntegral $ getFinite i
+  safeFromInt _ i = finite $ fromIntegral i
+
 instance (Num (WrapSafe s 0)) => Sizeable s '[] where
   sizeof _ = 0
   toCoord _ _ = ()
@@ -76,18 +85,11 @@ instance (KnownNat x) => Sizeable s '[x] where
   toCoord _ i = i
   fromCoord _ i = i
 
-instance (KnownNat x, (KnownNat (SizeOfDims (y : xs))), Sizeable 'Safe (y : xs), (KnownNat (x N.* SizeOfDims (y : xs))))
-  => Sizeable Safe (x : y : xs) where
+instance (SafeToInt s x, SafeToInt s (x N.* SizeOfDims (y : xs)), SafeToInt s (SizeOfDims (y:xs)), KnownNat x, (KnownNat (SizeOfDims (y : xs))), Sizeable s (y : xs), (KnownNat (x N.* SizeOfDims (y : xs))))
+  => Sizeable s (x : y : xs) where
   sizeof _  = fromIntegral (L.natVal (Proxy @(SizeOfDims (x:y:xs))))
-  fromCoord _ ((getFinite -> a) :*: rest) = finite $ (a * fromIntegral (sizeof (Proxy @'(Safe, y:xs)))) + getFinite (fromCoord (Proxy @'(Safe, y:xs)) rest)
-  toCoord _ (getFinite -> i) = finite (i `mod` currentDim) :*: toCoord (Proxy @'(Safe, y:xs)) (finite (i `div` currentDim))
-    where
-      currentDim = fromIntegral $ L.natVal (Proxy @x)
-
-instance (KnownNat x, KnownNat (y N.* SizeOfDims xs), KnownNat (x N.* (y N.* SizeOfDims xs)), (Sizeable Unsafe (y:xs)), KnownNat (x N.* SizeOfDims (y : xs))) => Sizeable Unsafe (x : y : xs) where
-  sizeof _  = fromIntegral (L.natVal (Proxy @(SizeOfDims (x:y:xs))))
-  fromCoord _ (a :*: rest) = (a * fromIntegral (sizeof (Proxy @'(Unsafe, y:xs)))) + (fromCoord (Proxy @'(Unsafe, y:xs)) rest)
-  toCoord _ i = (i `mod` currentDim) :*: toCoord (Proxy @'(Unsafe, y:xs)) (i `div` currentDim)
+  fromCoord _ ((safeToInt (Proxy @'(s, x)) -> a) :*: rest) = safeFromInt (Proxy @'(s, SizeOfDims (x : y : xs))) $ (a * fromIntegral (sizeof (Proxy @'(s, y:xs)))) + safeToInt (Proxy @'(s, SizeOfDims (y : xs))) (fromCoord (Proxy @'(s, y:xs)) rest)
+  toCoord _ (safeToInt (Proxy @'(s, SizeOfDims (x : y : xs))) -> i) = safeFromInt (Proxy @'(s, x)) (i `mod` currentDim) :*: toCoord (Proxy @'(s, y:xs)) (safeFromInt (Proxy @'(s, SizeOfDims (y : xs))) $  (i `div` currentDim))
     where
       currentDim = fromIntegral $ L.natVal (Proxy @x)
 
