@@ -48,8 +48,6 @@ type family Coords (dims :: [Nat]) = result where
   Coords '[] = ()
   Coords (_:xs) = Int :*: Coords xs
 
-
-
 instance (KnownNat (SizeOfDims dims), Sizeable dims) => Distributive (DimGrid dims) where
   distribute = distributeRep
 
@@ -81,23 +79,11 @@ instance (Sizeable dims, KnownNat (SizeOfDims dims)) => Representable (DimGrid d
   index (DimGrid v) ind = v V.! fromCoord (Proxy @dims) ind
   tabulate f = DimGrid $ V.generate (sizeof (Proxy @dims)) (f . toCoord (Proxy @dims))
 
+instance (ind ~ Coords dims, Sizeable dims, KnownNat (SizeOfDims dims)) => FunctorWithIndex ind (DimGrid dims) where
+  imap = imapRep
 
--- instance (KnownNat w, KnownNat h) => FunctorWithIndex (Int, Int) (Grid w h) where
---   imap = imapRep
+instance (ind ~ Coords dims, Sizeable dims, KnownNat (SizeOfDims dims)) => FoldableWithIndex ind (DimGrid dims) where
+  ifoldMap = ifoldMapRep
 
--- instance (KnownNat w, KnownNat h) => FoldableWithIndex (Int, Int) (Grid w h) where
---   ifoldMap = ifoldMapRep
-
--- instance (KnownNat w, KnownNat h) => TraversableWithIndex (Int, Int) (Grid w h) where
---   itraverse = itraverseRep
-
-
-testGrid :: DimGrid '[3] Int
-testGrid = tabulate id
-
-testGrid2 :: DimGrid '[2, 2] (Int :*: Int)
-testGrid2 = tabulate id
-
-
-testGrid3 :: DimGrid '[3, 3, 3] (Int :*: Int :*: Int)
-testGrid3 = tabulate id
+instance (ind ~ Coords dims, Sizeable dims, KnownNat (SizeOfDims dims)) => TraversableWithIndex ind (DimGrid dims) where
+  itraverse = itraverseRep
