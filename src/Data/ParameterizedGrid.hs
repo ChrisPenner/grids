@@ -11,6 +11,7 @@
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Data.ParameterizedGrid where
@@ -62,38 +63,43 @@ sizeof
   :: forall (dims :: [Nat]) . KnownNat (SizeOfDims dims) => Proxy dims -> Int
 sizeof _ = fromIntegral (L.natVal (Proxy @(SizeOfDims dims)))
 
-class Sizeable (s :: Safeness) (dims :: [Nat]) where
+class (NumericConstraints s dims) => Sizeable (s :: Safeness) (dims :: [Nat]) where
   toCoord :: Proxy '(s, dims) -> WrapSafe s (SizeOfDims dims) -> Coords s dims
   fromCoord :: Proxy '(s, dims) -> Coords s dims -> WrapSafe s (SizeOfDims dims)
 
-instance (Num (WrapSafe s 0)) => Sizeable s '[] where
+instance (Num (WrapSafe s 0), Integral (WrapSafe s 0)) => Sizeable s '[] where
   toCoord _ _ = ()
   fromCoord _ _ = 0
 
-instance (KnownNat x) => Sizeable s '[x] where
+instance (KnownNat x, Integral (WrapSafe s x)) => Sizeable s '[x] where
   toCoord _ i = i
   fromCoord _ i = i
 
-instance (Integral (WrapSafe s (x N.* SizeOfDims (y : xs))), Integral (WrapSafe s x), Integral (WrapSafe s (SizeOfDims (y:xs))), Num (WrapSafe s (x N.* SizeOfDims (y : xs))), KnownNat x, (KnownNat (SizeOfDims (y : xs))), Sizeable s (y : xs), (KnownNat (x N.* SizeOfDims (y : xs))))
+type NumericConstraints s dims = (Integral (WrapSafe s (SizeOfDims dims)), KnownNat (SizeOfDims dims))
+
+instance (NumericConstraints s (x : y : xs), Sizeable s (y:xs), NumericConstraints s '[x])
   => Sizeable s (x : y : xs) where
   fromCoord _ ((fromIntegral -> a) :*: rest) = fromIntegral $ (a * fromIntegral (sizeof (Proxy @(y:xs)))) + fromIntegral (fromCoord (Proxy @'(s, y:xs)) rest)
   toCoord _ (fromIntegral -> i) = fromIntegral (i `mod` currentDim) :*: toCoord (Proxy @'(s, y:xs)) (fromIntegral (i `div` currentDim))
     where
       currentDim = fromIntegral $ L.natVal (Proxy @x)
 
--- instance (SafeToInt s (SizeOfDims dims), KnownNat (SizeOfDims dims), Sizeable s dims) => Distributive (PGrid s dims) where
---   distribute = distributeRep
+instance (Sizeable s dims) => Distributive (PGrid s dims) where
+  distribute = distributeRep
 
--- instance (SafeToInt s (SizeOfDims dims), Sizeable s dims, KnownNat (SizeOfDims dims)) => Representable (PGrid s dims) where
---   type Rep (PGrid s dims) = Coords s dims
---   index (PGrid v) ind = v V.! fromIntegral (safeToInt (Proxy @'(s, SizeOfDims dims)) (fromCoord (Proxy @'(s, dims)) ind))
---   tabulate f = PGrid $ V.generate (fromIntegral $ sizeof (Proxy @'(s, dims))) (f . toCoord (Proxy @'(s, dims)) . safeFromInt (Proxy @'(s, SizeOfDims dims)))
+instance (Sizeable s dims) => Representable (PGrid s dims) where
+  type Rep (PGrid s dims) = Coords s dims
+  index (PGrid v) ind = v V.! fromIntegral (fromCoord (Proxy @'(s, dims)) ind)
+  tabulate f = PGrid $ V.generate (fromIntegral $ sizeof (Proxy @dims)) (f . toCoord (Proxy @'(s, dims)) . fromIntegral)
 
--- instance (SafeToInt s (SizeOfDims dims), ind ~ Coords s dims, Sizeable s dims, KnownNat (SizeOfDims dims)) => FunctorWithIndex ind (PGrid s dims) where
---   imap = imapRep
+instance (Sizeable s dims, ind ~ Coords s dims)
+  => FunctorWithIndex ind (PGrid s dims) where
+    imap = imapRep
 
--- instance (SafeToInt s (SizeOfDims dims),ind ~ Coords s dims, Sizeable s dims, KnownNat (SizeOfDims dims)) => FoldableWithIndex ind (PGrid s dims) where
---   ifoldMap = ifoldMapRep
+instance (Sizeable s dims, ind ~ Coords s dims)
+  => FoldableWithIndex ind (PGrid s dims) where
+    ifoldMap = ifoldMapRep
 
--- instance (SafeToInt s (SizeOfDims dims), ind ~ Coords s dims, Sizeable s dims, KnownNat (SizeOfDims dims)) => TraversableWithIndex ind (PGrid s dims) where
---   itraverse = itraverseRep
+instance (Sizeable s dims, ind ~ Coords s dims)
+  => TraversableWithIndex ind (PGrid s dims) where
+    itraverse = itraverseRep
