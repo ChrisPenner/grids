@@ -11,9 +11,11 @@
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
-module Data.SafeGrid where
+module Data.SimpleGrid where
 
 import           Data.Distributive
 import           Data.Functor.Rep
@@ -25,65 +27,94 @@ import           Control.Lens
 import           Data.Kind
 import           GHC.TypeNats                  as N
 import           Data.Finite
+import Data.Singletons.Prelude
 
-
-newtype SafeGrid  (dims :: [Nat]) a =
-  SafeGrid (V.Vector a)
-  deriving (Show, Eq, Functor, Applicative, Foldable, Traversable)
-
-type family KnownNats dims :: Constraint where
-  KnownNats (x:xs) = (KnownNat x, KnownNats xs)
-  KnownNats '[] = ()
+data SGrid (dims :: [Nat]) a =
+  SGrid [Int] (V.Vector a)
+  deriving (Show, Eq, Functor, Foldable, Traversable)
 
 type family SizeOfDims dims :: Nat where
+  SizeOfDims '[] = 0
+  SizeOfDims (x:'[]) = x
   SizeOfDims (x:xs) = (x N.* SizeOfDims xs)
-  SizeOfDims '[] = 1
 
 data x :*: y = x :*: y
   deriving Show
 
 infixr 9 :*:
 
+class FoldCoord p where
+  foldCoord :: p -> [Int]
+
+instance (FoldCoord y) => FoldCoord (Int :*: y) where
+  foldCoord (x :*: y) = x : foldCoord y
+
+instance FoldCoord Int where
+  foldCoord x = [x]
+
 type family Coords (dims :: [Nat]) where
   Coords '[n] = Finite n
-  Coords '[] = ()
   Coords (n:xs) = Finite n :*: Coords xs
 
-class Sizeable (dims :: [Nat]) where
-  sizeof :: Proxy dims -> Int
+sizeof
+  :: forall (dims :: [Nat]) . KnownNat (SizeOfDims dims) => Proxy dims -> Int
+sizeof _ = fromIntegral (L.natVal (Proxy @(SizeOfDims dims)))
+
+type NumericConstraints dims = (KnownNat (SizeOfDims dims))
+
+type Dims = [Int]
+
+class (NumericConstraints dims) => Sizeable (dims :: [Nat]) where
   toCoord :: Proxy dims -> Finite (SizeOfDims dims) -> Coords dims
   fromCoord :: Proxy dims -> Coords dims -> Finite (SizeOfDims dims)
 
-instance Sizeable '[] where
-  sizeof _ = 1
-  toCoord _ _ = ()
-  fromCoord _ _ = 1
-
 instance (KnownNat x) => Sizeable '[x] where
-  sizeof _  = fromIntegral (L.natVal (Proxy @x))
   toCoord _ i = i
   fromCoord _ i = i
 
-instance (KnownNat x, KnownNat (y N.* SizeOfDims xs), KnownNat (x N.* (y N.* SizeOfDims xs)), (Sizeable (y:xs))) => Sizeable (x : y : xs) where
-  sizeof _  = fromIntegral (L.natVal (Proxy @(SizeOfDims (x:y:xs))))
-  fromCoord _ ((getFinite -> a) :*: rest) = finite $ (a * fromIntegral (sizeof (Proxy @(y:xs)))) + getFinite (fromCoord (Proxy @(y:xs)) rest)
-  toCoord _ (getFinite -> i) = finite (i `mod` currentDim) :*: toCoord (Proxy @(y:xs)) (finite (i `div` currentDim))
-    where
-      currentDim = fromIntegral $ L.natVal (Proxy @x)
+toCoord' :: Dims -> Int -> [Int]
+toCoord' []       _ = []
+toCoord' [_     ] n = [n]
+toCoord' (_ : ds) n = (n `div` product ds) : toCoord' ds (n `mod` product ds)
 
-instance (KnownNat (SizeOfDims dims), Sizeable dims) => Distributive (SafeGrid dims) where
+fromCoord' :: Dims -> [Int] -> Int
+fromCoord' _        []       = 1
+fromCoord' _        [c     ] = c
+fromCoord' (_ : ds) (c : cs) = c * product ds + fromCoord' ds cs
+
+toFinite :: (KnownNat n) => Integral m => m -> Finite n
+toFinite = finite . fromIntegral
+
+fromFinite :: Num n => Finite m -> n
+fromFinite = fromIntegral . getFinite
+
+instance (KnownNat (x N.* SizeOfDims (y:xs)), KnownNat x, Sizeable (y:xs)) => Sizeable (x:y:xs) where
+  toCoord _ n = firstCoord :*: toCoord (Proxy @(y:xs)) remainder
+    where
+      firstCoord = toFinite (n `div` fromIntegral (sizeof (Proxy @(y:xs))))
+      remainder = toFinite (fromFinite n `mod` sizeof (Proxy @(y:xs)))
+  fromCoord _ (x :*: ys) =
+    toFinite $ firstPart + rest
+      where
+        firstPart = fromFinite x * sizeof (Proxy @(y:xs))
+        rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
+
+instance (Sizeable dims, SingI dims) => Distributive (SGrid dims) where
   distribute = distributeRep
 
-instance (Sizeable dims, KnownNat (SizeOfDims dims)) => Representable (SafeGrid dims) where
-  type Rep (SafeGrid dims) = Coords dims
-  index (SafeGrid v) ind = v V.! fromIntegral (getFinite (fromCoord (Proxy @dims) ind))
-  tabulate f = SafeGrid $ V.generate (fromIntegral $ sizeof (Proxy @dims)) (f . toCoord (Proxy @dims) . finite . fromIntegral)
+instance (Sizeable dims, SingI dims) => Representable (SGrid dims) where
+  type Rep (SGrid dims) = Coords dims
+  index (SGrid _ v) ind = v V.! fromIntegral (fromCoord (Proxy @dims) ind)
+  tabulate f = SGrid (fromIntegral <$> demote @dims) $ V.generate (fromIntegral $ sizeof (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
 
-instance (ind ~ Coords dims, Sizeable dims, KnownNat (SizeOfDims dims)) => FunctorWithIndex ind (SafeGrid dims) where
-  imap = imapRep
+instance (SingI dims, Sizeable dims, ind ~ Coords dims)
+  => FunctorWithIndex ind (SGrid dims) where
+    imap = imapRep
 
-instance (ind ~ Coords dims, Sizeable dims, KnownNat (SizeOfDims dims)) => FoldableWithIndex ind (SafeGrid dims) where
-  ifoldMap = ifoldMapRep
+instance (SingI dims, Sizeable dims, ind ~ Coords dims)
+  => FoldableWithIndex ind (SGrid dims) where
+    ifoldMap = ifoldMapRep
 
-instance (ind ~ Coords dims, Sizeable dims, KnownNat (SizeOfDims dims)) => TraversableWithIndex ind (SafeGrid dims) where
-  itraverse = itraverseRep
+instance (SingI dims, Sizeable dims, ind ~ Coords dims)
+  => TraversableWithIndex ind (SGrid dims) where
+    itraverse = itraverseRep
