@@ -42,6 +42,15 @@ data x :*: y = x :*: y
 
 infixr 9 :*:
 
+class FoldCoord p where
+  foldCoord :: p -> [Int]
+
+instance (FoldCoord y) => FoldCoord (Int :*: y) where
+  foldCoord (x :*: y) = x : foldCoord y
+
+instance FoldCoord Int where
+  foldCoord x = [x]
+
 type family Coords (dims :: [Nat]) where
   Coords '[n] = Finite n
   Coords '[] = ()
@@ -55,15 +64,6 @@ type NumericConstraints dims = (KnownNat (SizeOfDims dims))
 
 type Dims = [Int]
 
-toCoord' :: Dims -> Int -> [Int]
-toCoord' []       _ = []
-toCoord' [_     ] n = [n]
-toCoord' (_ : ds) n = (n `div` product ds) : toCoord' ds (n `mod` product ds)
-
-fromCoord' :: Dims -> [Int] -> Int
-fromCoord' _        []       = 1
-fromCoord' _        [c     ] = c
-fromCoord' (_ : ds) (c : cs) = c * product ds + fromCoord' ds cs
 
 class (NumericConstraints dims) => Sizeable (dims :: [Nat]) where
   toCoord :: Proxy dims -> Finite (SizeOfDims dims) -> Coords dims
@@ -77,12 +77,19 @@ instance (KnownNat x) => Sizeable '[x] where
   toCoord _ i = i
   fromCoord _ i = i
 
-instance (NumericConstraints (x : y : xs), Sizeable (y:xs), NumericConstraints '[x])
-  => Sizeable (x : y : xs) where
-  fromCoord _ ((fromIntegral -> a) :*: rest) = fromIntegral $ (a * fromIntegral (sizeof (Proxy @(y:xs)))) + fromIntegral (fromCoord (Proxy @(y:xs)) rest)
-  toCoord _ (fromIntegral -> i) = fromIntegral (i `mod` currentDim) :*: toCoord (Proxy @(y:xs)) (fromIntegral (i `div` currentDim))
-    where
-      currentDim = fromIntegral $ L.natVal (Proxy @x)
+toCoord' :: Dims -> Int -> [Int]
+toCoord' []       _ = []
+toCoord' [_     ] n = [n]
+toCoord' (_ : ds) n = (n `div` product ds) : toCoord' ds (n `mod` product ds)
+
+fromCoord' :: Dims -> [Int] -> Int
+fromCoord' _        []       = 1
+fromCoord' _        [c     ] = c
+fromCoord' (_ : ds) (c : cs) = c * product ds + fromCoord' ds cs
+
+instance (KnownNat (x N.* SizeOfDims (y:xs)), KnownNat x, Sizeable (y:xs)) => Sizeable (x:y:xs) where
+  toCoord _ n = finite (fromIntegral n `div` fromIntegral (sizeof (Proxy @(y:xs)))) :*: toCoord (Proxy @(y:xs)) (finite . fromIntegral $ (fromIntegral (getFinite n) `mod` sizeof (Proxy @(y:xs))))
+  fromCoord _ (x :*: ys) = finite . fromIntegral $ (fromIntegral (getFinite x) * sizeof (Proxy @(y:xs))) + fromIntegral (getFinite (fromCoord (Proxy @(y:xs)) ys))
 
 instance (Sizeable dims, SingI dims) => Distributive (SGrid dims) where
   distribute = distributeRep
