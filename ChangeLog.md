@@ -1,3 +1,3 @@
-# Changelog for representable-grid
+# Changelog for grids
 
 ## Unreleased changes

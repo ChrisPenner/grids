@@ -27,7 +27,6 @@ import           Control.Lens
 import           Data.Kind
 import           GHC.TypeNats                  as N
 import           Data.Finite
-import Data.Singletons.Prelude
 
 data SGrid (dims :: [Nat]) a =
   SGrid [Int] (V.Vector a)
@@ -99,22 +98,22 @@ instance (KnownNat (x N.* SizeOfDims (y:xs)), KnownNat x, Sizeable (y:xs)) => Si
         firstPart = fromFinite x * sizeof (Proxy @(y:xs))
         rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
 
-instance (Sizeable dims, SingI dims) => Distributive (SGrid dims) where
-  distribute = distributeRep
+-- instance (Sizeable dims, SingI dims) => Distributive (SGrid dims) where
+--   distribute = distributeRep
 
-instance (Sizeable dims, SingI dims) => Representable (SGrid dims) where
-  type Rep (SGrid dims) = Coords dims
-  index (SGrid _ v) ind = v V.! fromIntegral (fromCoord (Proxy @dims) ind)
-  tabulate f = SGrid (fromIntegral <$> demote @dims) $ V.generate (fromIntegral $ sizeof (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
+-- instance (Sizeable dims, SingI dims) => Representable (SGrid dims) where
+--   type Rep (SGrid dims) = Coords dims
+--   index (SGrid _ v) ind = v V.! fromIntegral (fromCoord (Proxy @dims) ind)
+--   tabulate f = SGrid (fromIntegral <$> demote @dims) $ V.generate (fromIntegral $ sizeof (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
 
-instance (SingI dims, Sizeable dims, ind ~ Coords dims)
-  => FunctorWithIndex ind (SGrid dims) where
-    imap = imapRep
+-- instance (SingI dims, Sizeable dims, ind ~ Coords dims)
+--   => FunctorWithIndex ind (SGrid dims) where
+--     imap = imapRep
 
-instance (SingI dims, Sizeable dims, ind ~ Coords dims)
-  => FoldableWithIndex ind (SGrid dims) where
-    ifoldMap = ifoldMapRep
+-- instance (SingI dims, Sizeable dims, ind ~ Coords dims)
+--   => FoldableWithIndex ind (SGrid dims) where
+--     ifoldMap = ifoldMapRep
 
-instance (SingI dims, Sizeable dims, ind ~ Coords dims)
-  => TraversableWithIndex ind (SGrid dims) where
-    itraverse = itraverseRep
+-- instance (SingI dims, Sizeable dims, ind ~ Coords dims)
+--   => TraversableWithIndex ind (SGrid dims) where
+--     itraverse = itraverseRep
