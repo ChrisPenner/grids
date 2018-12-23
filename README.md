@@ -1,5 +1,7 @@
 # Grids
 
+[HACKAGE](http://hackage.haskell.org/package/grids)
+
 Grids can have an arbitrary amount of dimensions, specified by a type-level
 list of `Nat`s. They're backed by a single contiguous Vector and gain the associated performance benefits. Currently
 only boxed immutable vectors are supported, but let me know if you need other variants.
