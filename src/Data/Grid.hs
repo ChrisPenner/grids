@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# language ScopedTypeVariables #-}
@@ -12,10 +13,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE FunctionalDependencies #-}
 
-module Data.SimpleGrid where
+module Data.Grid where
 
 import           Data.Distributive
 import           Data.Functor.Rep
@@ -27,33 +26,29 @@ import           Control.Lens
 import           Data.Kind
 import           GHC.TypeNats                  as N
 import           Data.Finite
+import           Control.Applicative
 
-data SGrid (dims :: [Nat]) a =
-  SGrid [Int] (V.Vector a)
+newtype Grid (dims :: [Nat]) a =
+  Grid  (V.Vector a)
   deriving (Show, Eq, Functor, Foldable, Traversable)
+
+instance (Dimensions dims) => Applicative (Grid dims) where
+  pure a = tabulate (const a)
+  liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
 type family SizeOfDims dims :: Nat where
   SizeOfDims '[] = 0
   SizeOfDims (x:'[]) = x
   SizeOfDims (x:xs) = (x N.* SizeOfDims xs)
 
-data x :*: y = x :*: y
-  deriving Show
+data x :# y = x :# y
+  deriving (Show, Eq, Ord)
 
-infixr 9 :*:
-
-class FoldCoord p where
-  foldCoord :: p -> [Int]
-
-instance (FoldCoord y) => FoldCoord (Int :*: y) where
-  foldCoord (x :*: y) = x : foldCoord y
-
-instance FoldCoord Int where
-  foldCoord x = [x]
+infixr 9 :#
 
 type family Coords (dims :: [Nat]) where
   Coords '[n] = Finite n
-  Coords (n:xs) = Finite n :*: Coords xs
+  Coords (n:xs) = Finite n :# Coords xs
 
 sizeof
   :: forall (dims :: [Nat]) . KnownNat (SizeOfDims dims) => Proxy dims -> Int
@@ -63,11 +58,11 @@ type NumericConstraints dims = (KnownNat (SizeOfDims dims))
 
 type Dims = [Int]
 
-class (NumericConstraints dims) => Sizeable (dims :: [Nat]) where
+class (NumericConstraints dims) => Dimensions (dims :: [Nat]) where
   toCoord :: Proxy dims -> Finite (SizeOfDims dims) -> Coords dims
   fromCoord :: Proxy dims -> Coords dims -> Finite (SizeOfDims dims)
 
-instance (KnownNat x) => Sizeable '[x] where
+instance (KnownNat x) => Dimensions '[x] where
   toCoord _ i = i
   fromCoord _ i = i
 
@@ -87,33 +82,39 @@ toFinite = finite . fromIntegral
 fromFinite :: Num n => Finite m -> n
 fromFinite = fromIntegral . getFinite
 
-instance (KnownNat (x N.* SizeOfDims (y:xs)), KnownNat x, Sizeable (y:xs)) => Sizeable (x:y:xs) where
-  toCoord _ n = firstCoord :*: toCoord (Proxy @(y:xs)) remainder
+instance (KnownNat (x N.* SizeOfDims (y:xs)), KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
+  toCoord _ n = firstCoord :# toCoord (Proxy @(y:xs)) remainder
     where
       firstCoord = toFinite (n `div` fromIntegral (sizeof (Proxy @(y:xs))))
       remainder = toFinite (fromFinite n `mod` sizeof (Proxy @(y:xs)))
-  fromCoord _ (x :*: ys) =
+  fromCoord _ (x :# ys) =
     toFinite $ firstPart + rest
       where
         firstPart = fromFinite x * sizeof (Proxy @(y:xs))
         rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
 
--- instance (Sizeable dims, SingI dims) => Distributive (SGrid dims) where
---   distribute = distributeRep
+instance (Dimensions dims) => Distributive (Grid dims) where
+  distribute = distributeRep
 
--- instance (Sizeable dims, SingI dims) => Representable (SGrid dims) where
---   type Rep (SGrid dims) = Coords dims
---   index (SGrid _ v) ind = v V.! fromIntegral (fromCoord (Proxy @dims) ind)
---   tabulate f = SGrid (fromIntegral <$> demote @dims) $ V.generate (fromIntegral $ sizeof (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
+instance (Dimensions dims) => Representable (Grid dims) where
+  type Rep (Grid dims) = Coords dims
+  index (Grid v) ind = v V.! fromIntegral (fromCoord (Proxy @dims) ind)
+  tabulate f = Grid $ V.generate (fromIntegral $ sizeof (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
 
--- instance (SingI dims, Sizeable dims, ind ~ Coords dims)
---   => FunctorWithIndex ind (SGrid dims) where
---     imap = imapRep
+instance (Dimensions dims, ind ~ Coords dims)
+  => FunctorWithIndex ind (Grid dims) where
+    imap = imapRep
 
--- instance (SingI dims, Sizeable dims, ind ~ Coords dims)
---   => FoldableWithIndex ind (SGrid dims) where
---     ifoldMap = ifoldMapRep
+instance (Dimensions dims, ind ~ Coords dims)
+  => FoldableWithIndex ind (Grid dims) where
+    ifoldMap = ifoldMapRep
 
--- instance (SingI dims, Sizeable dims, ind ~ Coords dims)
---   => TraversableWithIndex ind (SGrid dims) where
---     itraverse = itraverseRep
+instance (Dimensions dims, ind ~ Coords dims)
+  => TraversableWithIndex ind (Grid dims) where
+    itraverse = itraverseRep
+
+testGrid1 :: Grid '[3, 3] Int
+testGrid1 = tabulate (fromIntegral . fromCoord (Proxy @'[3, 3]))
+
+testGrid2 :: Grid '[3, 3] Int
+testGrid2 = tabulate ((* 10) . fromIntegral . fromCoord (Proxy @'[3, 3]))

@@ -1,0 +1,43 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: f922dfc609f39df64e26676acd5c23a2a4a023f2ddb8f235b7bad8806e0349b4
+
+name:           grids
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/ChrisPenner/grids#readme>
+homepage:       https://github.com/ChrisPenner/grids#readme
+bug-reports:    https://github.com/ChrisPenner/grids/issues
+author:         Chris Penner
+maintainer:     christopher.penner@gmail.com
+copyright:      Chris Penner
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/ChrisPenner/grids
+
+library
+  exposed-modules:
+      Data.Grid
+      Data.Grid.Lens
+  other-modules:
+      Paths_grids
+  hs-source-dirs:
+      src
+  build-depends:
+      adjunctions
+    , base >=4.7 && <5
+    , distributive
+    , finite-typelits
+    , lens
+    , vector
+  default-language: Haskell2010

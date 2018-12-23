@@ -1,7 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Data.Grid.Lens where
 
-import Data.SafeGrid
+import Data.Grid
 import Control.Lens as L
 import Data.Functor.Rep as R
 
