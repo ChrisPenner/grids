@@ -1,7 +1,10 @@
 # Grids
 
 Grids can have an arbitrary amount of dimensions, specified by a type-level
-list of `Nat`s, here's how we might represent a Tic-Tac-Toe board:
+list of `Nat`s. They're backed by a single contiguous Vector and gain the associated performance benefits. Currently
+only boxed immutable vectors are supported, but let me know if you need other variants.
+
+Here's how we might represent a Tic-Tac-Toe board:
 
 ```haskell
 data Piece = X | O deriving Show
@@ -76,11 +79,11 @@ You can get a value at an index out using `index` from `Data.Functor.Rep`:
 λ> g
 (Grid [[0,1,2]
       ,[3,4,5]])
-λ> g `R.index` (1 :# 1)
+λ> g `index` (1 :# 1)
 4
-λ> g `R.index` (1 :# 0)
+λ> g `index` (1 :# 0)
 3
-λ> g `R.index` (0 :# 2)
+λ> g `index` (0 :# 2)
 2
 ```
 
