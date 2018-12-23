@@ -53,7 +53,6 @@ instance FoldCoord Int where
 
 type family Coords (dims :: [Nat]) where
   Coords '[n] = Finite n
-  Coords '[] = ()
   Coords (n:xs) = Finite n :*: Coords xs
 
 sizeof
@@ -64,14 +63,9 @@ type NumericConstraints dims = (KnownNat (SizeOfDims dims))
 
 type Dims = [Int]
 
-
 class (NumericConstraints dims) => Sizeable (dims :: [Nat]) where
   toCoord :: Proxy dims -> Finite (SizeOfDims dims) -> Coords dims
   fromCoord :: Proxy dims -> Coords dims -> Finite (SizeOfDims dims)
-
-instance Sizeable '[] where
-  toCoord _ _ = ()
-  fromCoord _ _ = 0
 
 instance (KnownNat x) => Sizeable '[x] where
   toCoord _ i = i
@@ -87,9 +81,22 @@ fromCoord' _        []       = 1
 fromCoord' _        [c     ] = c
 fromCoord' (_ : ds) (c : cs) = c * product ds + fromCoord' ds cs
 
+toFinite :: (KnownNat n) => Integral m => m -> Finite n
+toFinite = finite . fromIntegral
+
+fromFinite :: Num n => Finite m -> n
+fromFinite = fromIntegral . getFinite
+
 instance (KnownNat (x N.* SizeOfDims (y:xs)), KnownNat x, Sizeable (y:xs)) => Sizeable (x:y:xs) where
-  toCoord _ n = finite (fromIntegral n `div` fromIntegral (sizeof (Proxy @(y:xs)))) :*: toCoord (Proxy @(y:xs)) (finite . fromIntegral $ (fromIntegral (getFinite n) `mod` sizeof (Proxy @(y:xs))))
-  fromCoord _ (x :*: ys) = finite . fromIntegral $ (fromIntegral (getFinite x) * sizeof (Proxy @(y:xs))) + fromIntegral (getFinite (fromCoord (Proxy @(y:xs)) ys))
+  toCoord _ n = firstCoord :*: toCoord (Proxy @(y:xs)) remainder
+    where
+      firstCoord = toFinite (n `div` fromIntegral (sizeof (Proxy @(y:xs))))
+      remainder = toFinite (fromFinite n `mod` sizeof (Proxy @(y:xs)))
+  fromCoord _ (x :*: ys) =
+    toFinite $ firstPart + rest
+      where
+        firstPart = fromFinite x * sizeof (Proxy @(y:xs))
+        rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
 
 instance (Sizeable dims, SingI dims) => Distributive (SGrid dims) where
   distribute = distributeRep
@@ -111,5 +118,5 @@ instance (SingI dims, Sizeable dims, ind ~ Coords dims)
   => TraversableWithIndex ind (SGrid dims) where
     itraverse = itraverseRep
 
-testGrid :: SGrid '[2, 3] (Finite 2 :*: Finite 3)
+testGrid :: SGrid '[2] (Finite 2)
 testGrid = tabulate id
