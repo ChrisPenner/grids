@@ -94,8 +94,6 @@ indices:
 (Grid [[0,1000,2],[3,4,5]])
 ```
 
-
-
 ## Creation
 
 You can generate a grid by providing a function over the integer position in the grid (`generate`) or by providing
@@ -108,4 +106,11 @@ You can also use the `fromList` and `fromNestedLists` functions which return a
 - `fromNestedLists :: NestedLists dims a -> Maybe (Grid dims a)`
 - `generate :: (Int -> a) -> Grid dims a`
 - `tabulate :: (Coord dims -> a) -> Grid dims a`
+- `pure :: a -> Grid dims a`
 
+## Updating
+
+Use either the `cell` lens, or fmap, applicative, traversable.
+For batch updates using the underlying Vector implementation use `(//)`
+
+- `(//) :: Grid dims a -> [(Coord dims, a)] -> Grid dims a`

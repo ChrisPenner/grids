@@ -28,6 +28,7 @@ import           GHC.TypeNats                  as N
 import           Data.Finite
 import           Control.Applicative
 import           Data.List
+import           Data.Bifunctor
 
 newtype Grid (dims :: [Nat]) a =
   Grid  (V.Vector a)
@@ -35,6 +36,12 @@ newtype Grid (dims :: [Nat]) a =
 
 instance (NestLists dims, Show (NestedLists dims a)) => Show (Grid dims a) where
   show g = "(Grid " ++ show (toNestedLists g) ++ ")"
+
+instance (Dimensions dims, Semigroup a) => Semigroup (Grid dims a) where
+  (<>) = liftA2 (<>)
+
+instance (Dimensions dims, Monoid a) => Monoid (Grid dims a) where
+  mempty = pure mempty
 
 instance (Dimensions dims) => Applicative (Grid dims) where
   pure a = tabulate (const a)
@@ -135,7 +142,7 @@ chunkVector _ v
     in  before : chunkVector (Proxy @n) after
 
 instance (KnownNat n) => NestLists '[n] where
-  nestLists _ v = V.toList v
+  nestLists _ = V.toList
 
 instance (KnownNat n, NestLists (n:ns), Dimensions (m:n:ns), Dimensions (n:ns)) => NestLists (m:n:ns) where
   nestLists _ v = nestLists (Proxy @(n:ns)) <$> chunkVector (Proxy @(GridSize (n:ns))) v
@@ -158,22 +165,18 @@ fromNestedLists
    . (UnNestLists dims, Dimensions dims)
   => NestedLists dims a
   -> Maybe (Grid dims a)
-fromNestedLists xs = fromList . unNestLists (Proxy @dims) $ xs
+fromNestedLists = fromList . unNestLists (Proxy @dims)
 
 fromList :: forall a dims . (Dimensions dims) => [a] -> Maybe (Grid dims a)
 fromList xs =
   let v = V.fromList xs
   in  if V.length v == sizeof (Proxy @dims) then Just $ Grid v else Nothing
 
-testGrid1 :: Grid '[3, 3] Int
-testGrid1 = tabulate (fromIntegral . fromCoord (Proxy @'[3, 3]))
-
-testGrid2 :: Grid '[3, 3] Int
-testGrid2 = tabulate ((* 10) . fromIntegral . fromCoord (Proxy @'[3, 3]))
-
-data Piece = X | O
-  deriving Show
-toPiece n = if even n then X else O
-
-myGrid :: Grid '[3, 3] Piece
-myGrid = generate toPiece
+(//)
+  :: forall dims a
+   . (Dimensions dims)
+  => Grid dims a
+  -> [(Coord dims, a)]
+  -> Grid dims a
+(Grid v) // xs =
+  Grid (v V.// fmap (first (fromFinite . fromCoord (Proxy @dims))) xs)
