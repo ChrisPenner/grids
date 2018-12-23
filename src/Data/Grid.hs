@@ -14,7 +14,20 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
-module Data.Grid where
+module Data.Grid (
+  Grid(..)
+    , GridSize
+    , Coord
+    , (:#)(..)
+    , gridSize
+    , Dimensions(..)
+    , generate
+    , NestLists(..)
+    , UnNestLists(..)
+    , fromNestedLists
+    , fromList
+    , (//)
+    ) where
 
 import           Data.Distributive
 import           Data.Functor.Rep
@@ -48,7 +61,6 @@ instance (Dimensions dims) => Applicative (Grid dims) where
   liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
 type family GridSize dims :: Nat where
-  GridSize '[] = 0
   GridSize (x:'[]) = x
   GridSize (x:xs) = (x N.* GridSize xs)
 
@@ -61,30 +73,17 @@ type family Coord (dims :: [Nat]) where
   Coord '[n] = Finite n
   Coord (n:xs) = Finite n :# Coord xs
 
-sizeof :: forall (dims :: [Nat]) . KnownNat (GridSize dims) => Proxy dims -> Int
-sizeof _ = fromIntegral (L.natVal (Proxy @(GridSize dims)))
+gridSize
+  :: forall (dims :: [Nat]) . KnownNat (GridSize dims) => Proxy dims -> Int
+gridSize _ = fromIntegral (L.natVal (Proxy @(GridSize dims)))
 
-type NumericConstraints dims = (KnownNat (GridSize dims))
-
-type Dims = [Int]
-
-class (NumericConstraints dims, KnownNat (GridSize dims)) => Dimensions (dims :: [Nat]) where
+class (KnownNat (GridSize dims)) => Dimensions (dims :: [Nat]) where
   toCoord :: Proxy dims -> Finite (GridSize dims) -> Coord dims
   fromCoord :: Proxy dims -> Coord dims -> Finite (GridSize dims)
 
 instance (KnownNat x) => Dimensions '[x] where
   toCoord _ i = i
   fromCoord _ i = i
-
-toCoord' :: Dims -> Int -> [Int]
-toCoord' []       _ = []
-toCoord' [_     ] n = [n]
-toCoord' (_ : ds) n = (n `div` product ds) : toCoord' ds (n `mod` product ds)
-
-fromCoord' :: Dims -> [Int] -> Int
-fromCoord' _        []       = 1
-fromCoord' _        [c     ] = c
-fromCoord' (_ : ds) (c : cs) = c * product ds + fromCoord' ds cs
 
 toFinite :: (KnownNat n) => Integral m => m -> Finite n
 toFinite = finite . fromIntegral
@@ -95,12 +94,12 @@ fromFinite = fromIntegral . getFinite
 instance (KnownNat (x N.* GridSize (y:xs)), KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
   toCoord _ n = firstCoord :# toCoord (Proxy @(y:xs)) remainder
     where
-      firstCoord = toFinite (n `div` fromIntegral (sizeof (Proxy @(y:xs))))
-      remainder = toFinite (fromFinite n `mod` sizeof (Proxy @(y:xs)))
+      firstCoord = toFinite (n `div` fromIntegral (gridSize (Proxy @(y:xs))))
+      remainder = toFinite (fromFinite n `mod` gridSize (Proxy @(y:xs)))
   fromCoord _ (x :# ys) =
     toFinite $ firstPart + rest
       where
-        firstPart = fromFinite x * sizeof (Proxy @(y:xs))
+        firstPart = fromFinite x * gridSize (Proxy @(y:xs))
         rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
 
 instance (Dimensions dims) => Distributive (Grid dims) where
@@ -109,7 +108,7 @@ instance (Dimensions dims) => Distributive (Grid dims) where
 instance (Dimensions dims) => Representable (Grid dims) where
   type Rep (Grid dims) = Coord dims
   index (Grid v) ind = v V.! fromIntegral (fromCoord (Proxy @dims) ind)
-  tabulate f = Grid $ V.generate (fromIntegral $ sizeof (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
+  tabulate f = Grid $ V.generate (fromIntegral $ gridSize (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
 
 instance (Dimensions dims, ind ~ Coord dims)
   => FunctorWithIndex ind (Grid dims) where
@@ -124,7 +123,7 @@ instance (Dimensions dims, ind ~ Coord dims)
     itraverse = itraverseRep
 
 generate :: forall dims a . Dimensions dims => (Int -> a) -> Grid dims a
-generate f = Grid $ V.generate (sizeof (Proxy @dims)) f
+generate f = Grid $ V.generate (gridSize (Proxy @dims)) f
 
 type family NestedLists (dims :: [Nat]) a where
   NestedLists '[] a = a
@@ -170,7 +169,7 @@ fromNestedLists = fromList . unNestLists (Proxy @dims)
 fromList :: forall a dims . (Dimensions dims) => [a] -> Maybe (Grid dims a)
 fromList xs =
   let v = V.fromList xs
-  in  if V.length v == sizeof (Proxy @dims) then Just $ Grid v else Nothing
+  in  if V.length v == gridSize (Proxy @dims) then Just $ Grid v else Nothing
 
 (//)
   :: forall dims a
