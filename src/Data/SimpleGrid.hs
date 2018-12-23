@@ -12,8 +12,10 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
-module Data.SafeGrid where
+module Data.SimpleGrid where
 
 import           Data.Distributive
 import           Data.Functor.Rep
@@ -25,16 +27,11 @@ import           Control.Lens
 import           Data.Kind
 import           GHC.TypeNats                  as N
 import           Data.Finite
-import           Data.Singletons.Prelude
-import           Control.Applicative
+import Data.Singletons.Prelude
 
-newtype Grid (dims :: [Nat]) a =
-  Grid  (V.Vector a)
+data SGrid (dims :: [Nat]) a =
+  SGrid [Int] (V.Vector a)
   deriving (Show, Eq, Functor, Foldable, Traversable)
-
-instance (Sizeable dims) => Applicative (Grid dims) where
-  pure a = tabulate (const a)
-  liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
 type family SizeOfDims dims :: Nat where
   SizeOfDims '[] = 0
@@ -102,22 +99,22 @@ instance (KnownNat (x N.* SizeOfDims (y:xs)), KnownNat x, Sizeable (y:xs)) => Si
         firstPart = fromFinite x * sizeof (Proxy @(y:xs))
         rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
 
-instance (Sizeable dims) => Distributive (Grid dims) where
+instance (Sizeable dims, SingI dims) => Distributive (SGrid dims) where
   distribute = distributeRep
 
-instance (Sizeable dims) => Representable (Grid dims) where
-  type Rep (Grid dims) = Coords dims
-  index (Grid v) ind = v V.! fromIntegral (fromCoord (Proxy @dims) ind)
-  tabulate f = Grid $ V.generate (fromIntegral $ sizeof (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
+instance (Sizeable dims, SingI dims) => Representable (SGrid dims) where
+  type Rep (SGrid dims) = Coords dims
+  index (SGrid _ v) ind = v V.! fromIntegral (fromCoord (Proxy @dims) ind)
+  tabulate f = SGrid (fromIntegral <$> demote @dims) $ V.generate (fromIntegral $ sizeof (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
 
-instance (Sizeable dims, ind ~ Coords dims)
-  => FunctorWithIndex ind (Grid dims) where
+instance (SingI dims, Sizeable dims, ind ~ Coords dims)
+  => FunctorWithIndex ind (SGrid dims) where
     imap = imapRep
 
-instance (Sizeable dims, ind ~ Coords dims)
-  => FoldableWithIndex ind (Grid dims) where
+instance (SingI dims, Sizeable dims, ind ~ Coords dims)
+  => FoldableWithIndex ind (SGrid dims) where
     ifoldMap = ifoldMapRep
 
-instance (Sizeable dims, ind ~ Coords dims)
-  => TraversableWithIndex ind (Grid dims) where
+instance (SingI dims, Sizeable dims, ind ~ Coords dims)
+  => TraversableWithIndex ind (SGrid dims) where
     itraverse = itraverseRep
