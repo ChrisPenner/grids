@@ -13,6 +13,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Data.SimpleGrid where
 
@@ -117,6 +118,3 @@ instance (SingI dims, Sizeable dims, ind ~ Coords dims)
 instance (SingI dims, Sizeable dims, ind ~ Coords dims)
   => TraversableWithIndex ind (SGrid dims) where
     itraverse = itraverseRep
-
-testGrid :: SGrid '[2] (Finite 2)
-testGrid = tabulate id
