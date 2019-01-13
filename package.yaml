@@ -26,6 +26,8 @@ dependencies:
 - adjunctions
 - lens
 - finite-typelits
+- reflection
+- singletons
 
 library:
   source-dirs: src

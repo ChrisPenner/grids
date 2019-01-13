@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Data.Grid (
   Grid(..)
@@ -27,6 +28,7 @@ module Data.Grid (
     , fromNestedLists
     , fromList
     , (//)
+                 , existentializeGrid
     ) where
 
 import           Data.Distributive
@@ -42,6 +44,9 @@ import           Data.Finite
 import           Control.Applicative
 import           Data.List
 import           Data.Bifunctor
+import GHC.Natural
+import Data.Singletons.Prelude
+import Data.Reflection
 
 newtype Grid (dims :: [Nat]) a =
   Grid  (V.Vector a)
@@ -179,3 +184,47 @@ fromList xs =
   -> Grid dims a
 (Grid v) // xs =
   Grid (v V.// fmap (first (fromFinite . fromCoord (Proxy @dims))) xs)
+
+
+-- class ToGrid (k :: [Nat]) where
+  -- toGrid :: forall k. Grid k ()
+
+existentializeGrid
+  :: forall r
+   . [Integer]
+  -> (  forall d
+      . (Show (Grid d ()), Dimensions d, NestLists d)
+     => Grid d ()
+     -> r
+     )
+  -> r
+existentializeGrid [] f = error "dimensions must not be empty"
+existentializeGrid xs f = helper xs
+ where
+  helper :: [Integer] -> r
+  helper (x : xs) = reifyNat x (recurse xs)
+  recurse :: forall n . KnownNat n => [Integer] -> Proxy n -> r
+  recurse [] _ = f (pure () :: Grid '[n] ())
+    -- recurse xs = 
+
+
+-- withGrid :: forall r . [Integer] -> (forall d . Dimensions d => Grid d () -> r) -> r
+-- withGrid dimensions f = stuff
+--  where
+--   stuff :: r
+--   stuff =
+--     (withSomeSing :: Demote [Nat]
+--         -> (forall d . Dimensions d => Sing (d :: [Nat]) -> r)
+--         -> r
+--       )
+--       (fromIntegral <$> dimensions :: [Natural])
+--       go
+--   go :: forall dims . Dimensions dims => Sing (dims :: [Nat]) -> r
+--   go _ = f (pure () :: Grid dims ())
+
+-- tabulate' :: forall d a . [Int] -> a -> Grid d a
+-- tabulate' dimensions x = undefined
+--  where
+--   stuff = withSomeSing (fromIntegral <$> dimensions) go
+--   go :: Sing (x :: [Nat]) -> Grid d a
+--   go _ = pure x

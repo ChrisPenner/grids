@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a9762c7345dd2ce0dbbd1c65d6e6529407c552773f52e506e39795e5ca9b3793
+-- hash: 1488ec8410a83bd87fb46623beab8bbbc79b2103c5425dfa1f01dcb955b8591d
 
 name:           grids
 version:        0.1.1.0
@@ -40,5 +40,7 @@ library
     , distributive
     , finite-typelits
     , lens
+    , reflection
+    , singletons
     , vector
   default-language: Haskell2010
