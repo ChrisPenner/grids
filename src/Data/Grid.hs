@@ -4,6 +4,7 @@
 {-# language ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -20,7 +21,6 @@ module Data.Grid (
     , GridSize
     , Coord
     , (:#)(..)
-    , gridSize
     , Dimensions(..)
     , generate
     , NestLists(..)
@@ -28,7 +28,6 @@ module Data.Grid (
     , fromNestedLists
     , fromList
     , (//)
-                 , existentializeGrid
     ) where
 
 import           Data.Distributive
@@ -47,6 +46,7 @@ import           Data.Bifunctor
 import GHC.Natural
 import Data.Singletons.Prelude
 import Data.Reflection
+import Data.Void
 
 newtype Grid (dims :: [Nat]) a =
   Grid  (V.Vector a)
@@ -65,7 +65,8 @@ instance (Dimensions dims) => Applicative (Grid dims) where
   pure a = tabulate (const a)
   liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
-type family GridSize dims :: Nat where
+type family GridSize (dims :: [Nat]) :: Nat where
+  GridSize '[] = 1
   GridSize (x:'[]) = x
   GridSize (x:xs) = (x N.* GridSize xs)
 
@@ -75,28 +76,30 @@ data x :# y = x :# y
 infixr 9 :#
 
 type family Coord (dims :: [Nat]) where
+  Coord '[] = Void
   Coord '[n] = Finite n
   Coord (n:xs) = Finite n :# Coord xs
 
-gridSize
-  :: forall (dims :: [Nat]) . KnownNat (GridSize dims) => Proxy dims -> Int
-gridSize _ = fromIntegral (L.natVal (Proxy @(GridSize dims)))
-
-class (KnownNat (GridSize dims)) => Dimensions (dims :: [Nat]) where
+class (AllC KnownNat dims, KnownNat (GridSize dims)) => Dimensions (dims :: [Nat]) where
   toCoord :: Proxy dims -> Finite (GridSize dims) -> Coord dims
   fromCoord :: Proxy dims -> Coord dims -> Finite (GridSize dims)
+  gridSize
+    :: Proxy dims -> Int
+  gridSize _ = fromIntegral $ L.natVal (Proxy @(GridSize dims))
+
+type family AllC (c :: x -> Constraint) (ts :: [x]) :: Constraint where
+  AllC c '[] = ()
+  AllC c (x:xs) = (c x, AllC c xs)
+
+instance Dimensions '[] where
+  toCoord _ _ = error "Empty grid has no members"
+  fromCoord _ v = absurd v
 
 instance (KnownNat x) => Dimensions '[x] where
   toCoord _ i = i
   fromCoord _ i = i
 
-toFinite :: (KnownNat n) => Integral m => m -> Finite n
-toFinite = finite . fromIntegral
-
-fromFinite :: Num n => Finite m -> n
-fromFinite = fromIntegral . getFinite
-
-instance (KnownNat (x N.* GridSize (y:xs)), KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
+instance (KnownNat (GridSize (x:y:xs)), KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
   toCoord _ n = firstCoord :# toCoord (Proxy @(y:xs)) remainder
     where
       firstCoord = toFinite (n `div` fromIntegral (gridSize (Proxy @(y:xs))))
@@ -106,6 +109,12 @@ instance (KnownNat (x N.* GridSize (y:xs)), KnownNat x, Dimensions (y:xs)) => Di
       where
         firstPart = fromFinite x * gridSize (Proxy @(y:xs))
         rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
+
+toFinite :: (KnownNat n) => Integral m => m -> Finite n
+toFinite = finite . fromIntegral
+
+fromFinite :: Num n => Finite m -> n
+fromFinite = fromIntegral . getFinite
 
 instance (Dimensions dims) => Distributive (Grid dims) where
   distribute = distributeRep
@@ -171,7 +180,11 @@ fromNestedLists
   -> Maybe (Grid dims a)
 fromNestedLists = fromList . unNestLists (Proxy @dims)
 
-fromList :: forall a dims . (Dimensions dims) => [a] -> Maybe (Grid dims a)
+fromList
+  :: forall a dims
+   . (KnownNat (GridSize dims), Dimensions dims)
+  => [a]
+  -> Maybe (Grid dims a)
 fromList xs =
   let v = V.fromList xs
   in  if V.length v == gridSize (Proxy @dims) then Just $ Grid v else Nothing
@@ -189,23 +202,19 @@ fromList xs =
 -- class ToGrid (k :: [Nat]) where
   -- toGrid :: forall k. Grid k ()
 
-existentializeGrid
-  :: forall r
-   . [Integer]
-  -> (  forall d
-      . (Show (Grid d ()), Dimensions d, NestLists d)
-     => Grid d ()
-     -> r
-     )
-  -> r
-existentializeGrid [] f = error "dimensions must not be empty"
-existentializeGrid xs f = helper xs
- where
-  helper :: [Integer] -> r
-  helper (x : xs) = reifyNat x (recurse xs)
-  recurse :: forall n . KnownNat n => [Integer] -> Proxy n -> r
-  recurse [] _ = f (pure () :: Grid '[n] ())
-    -- recurse xs = 
+-- existentializeGrid
+--   :: forall r
+--    . [Integer]
+--   -> (forall d . (Show (Grid d ()), Dimensions d) => Grid d () -> r)
+--   -> r
+-- existentializeGrid [] f = error "dimensions must not be empty"
+-- existentializeGrid xs f = helper xs
+--  where
+--   helper :: [Integer] -> r
+--   helper (x : xs) = reifyNat x (recurse xs)
+--   recurse :: forall n . KnownNat n => [Integer] -> Proxy n -> r
+--   recurse [] _ = f (pure () :: Grid '[n] ())
+--     -- recurse xs = 
 
 
 -- withGrid :: forall r . [Integer] -> (forall d . Dimensions d => Grid d () -> r) -> r
