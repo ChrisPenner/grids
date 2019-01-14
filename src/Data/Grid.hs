@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -23,11 +24,10 @@ module Data.Grid (
     , (:#)(..)
     , Dimensions(..)
     , generate
-    , NestLists(..)
-    , UnNestLists(..)
     , fromNestedLists
     , fromList
     , (//)
+                 , testEx
     ) where
 
 import           Data.Distributive
@@ -47,12 +47,13 @@ import GHC.Natural
 import Data.Singletons.Prelude
 import Data.Reflection
 import Data.Void
+import Data.Singletons.TypeLits
 
 newtype Grid (dims :: [Nat]) a =
   Grid  (V.Vector a)
   deriving (Eq, Functor, Foldable, Traversable)
 
-instance (NestLists dims, Show (NestedLists dims a)) => Show (Grid dims a) where
+instance (Dimensions dims, Show (NestedLists dims a)) => Show (Grid dims a) where
   show g = "(Grid " ++ show (toNestedLists g) ++ ")"
 
 instance (Dimensions dims, Semigroup a) => Semigroup (Grid dims a) where
@@ -66,7 +67,7 @@ instance (Dimensions dims) => Applicative (Grid dims) where
   liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
 type family GridSize (dims :: [Nat]) :: Nat where
-  GridSize '[] = 1
+  GridSize '[] = 0
   GridSize (x:'[]) = x
   GridSize (x:xs) = (x N.* GridSize xs)
 
@@ -76,7 +77,6 @@ data x :# y = x :# y
 infixr 9 :#
 
 type family Coord (dims :: [Nat]) where
-  Coord '[] = Void
   Coord '[n] = Finite n
   Coord (n:xs) = Finite n :# Coord xs
 
@@ -86,18 +86,20 @@ class (AllC KnownNat dims, KnownNat (GridSize dims)) => Dimensions (dims :: [Nat
   gridSize
     :: Proxy dims -> Int
   gridSize _ = fromIntegral $ L.natVal (Proxy @(GridSize dims))
+  nestLists :: Proxy dims -> V.Vector a -> NestedLists dims a
+  unNestLists :: Proxy dims -> NestedLists dims a -> [a]
 
 type family AllC (c :: x -> Constraint) (ts :: [x]) :: Constraint where
   AllC c '[] = ()
   AllC c (x:xs) = (c x, AllC c xs)
 
 instance Dimensions '[] where
-  toCoord _ _ = error "Empty grid has no members"
-  fromCoord _ v = absurd v
 
 instance (KnownNat x) => Dimensions '[x] where
   toCoord _ i = i
   fromCoord _ i = i
+  nestLists _ = V.toList
+  unNestLists _ xs = xs
 
 instance (KnownNat (GridSize (x:y:xs)), KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
   toCoord _ n = firstCoord :# toCoord (Proxy @(y:xs)) remainder
@@ -109,6 +111,8 @@ instance (KnownNat (GridSize (x:y:xs)), KnownNat x, Dimensions (y:xs)) => Dimens
       where
         firstPart = fromFinite x * gridSize (Proxy @(y:xs))
         rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
+  nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (Proxy @(GridSize (x:y:xs))) v
+  unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
 
 toFinite :: (KnownNat n) => Integral m => m -> Finite n
 toFinite = finite . fromIntegral
@@ -143,9 +147,6 @@ type family NestedLists (dims :: [Nat]) a where
   NestedLists '[] a = a
   NestedLists (_:xs) a = [NestedLists xs a]
 
-class NestLists (dims :: [Nat]) where
-  nestLists :: Proxy dims -> V.Vector a -> NestedLists dims a
-
 chunkVector :: forall n a . KnownNat n => Proxy n -> V.Vector a -> [V.Vector a]
 chunkVector _ v
   | V.null v
@@ -154,28 +155,14 @@ chunkVector _ v
   = let (before, after) = V.splitAt (fromIntegral $ L.natVal (Proxy @n)) v
     in  before : chunkVector (Proxy @n) after
 
-instance (KnownNat n) => NestLists '[n] where
-  nestLists _ = V.toList
-
-instance (KnownNat n, NestLists (n:ns), Dimensions (m:n:ns), Dimensions (n:ns)) => NestLists (m:n:ns) where
-  nestLists _ v = nestLists (Proxy @(n:ns)) <$> chunkVector (Proxy @(GridSize (n:ns))) v
-
 toNestedLists
-  :: forall dims a . (NestLists dims) => Grid dims a -> NestedLists dims a
+  :: forall dims a . (Dimensions dims) => Grid dims a -> NestedLists dims a
 toNestedLists (Grid v) = nestLists (Proxy @dims) v
 
-class UnNestLists (dims :: [Nat]) where
-  unNestLists :: Proxy dims -> NestedLists dims a -> [a]
-
-instance UnNestLists '[n] where
-  unNestLists _ xs = xs
-
-instance (UnNestLists (n:ns)) => UnNestLists (m:n:ns) where
-  unNestLists _ xs = concat (unNestLists (Proxy @(n:ns)) <$> xs)
 
 fromNestedLists
   :: forall dims a
-   . (UnNestLists dims, Dimensions dims)
+   . Dimensions dims
   => NestedLists dims a
   -> Maybe (Grid dims a)
 fromNestedLists = fromList . unNestLists (Proxy @dims)
@@ -198,9 +185,19 @@ fromList xs =
 (Grid v) // xs =
   Grid (v V.// fmap (first (fromFinite . fromCoord (Proxy @dims))) xs)
 
+testEx :: [Natural] -> String
+testEx ints = withSomeSing ints go
+ where
+  go :: forall d . Sing (d :: [Nat]) -> String
+  go SNil            = undefined -- how $ L.natVal (Proxy @d)
+  go (SCons SNat xs) = undefined
+  -- go [SNat : xs] = undefined -- show $ L.natVal (Proxy @d)
 
--- class ToGrid (k :: [Nat]) where
-  -- toGrid :: forall k. Grid k ()
+class ToGrid (k :: [Nat]) where
+  toGrid :: Sing k -> (forall d. Dimensions d => Grid d () -> r)
+
+instance ToGrid (x:xs) where
+  toGrid (SCons SNat SNil) = pure ()
 
 -- existentializeGrid
 --   :: forall r
