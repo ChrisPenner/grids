@@ -3,7 +3,17 @@
 [HACKAGE](http://hackage.haskell.org/package/grids)
 
 Grids can have an arbitrary amount of dimensions, specified by a type-level
-list of `Nat`s. They're backed by a single contiguous Vector and gain the
+list of `Nat`s.
+
+Each grid has Functor, Applicative, and Representable instances making it easy to do **Matlab-style** matrix programming. `liftA2 (+)` does piecewise addition, etc.
+
+By combining with `Control.Comonad.Representable.Store` you can do context-wise **linear transformations** for things like **Image Processing** or **Cellular Automata**.
+
+All in a typesafe package!
+
+Still working out the best interface for this stuff, feedback is appreciated!
+
+Grids backed by a single contiguous Vector and gain the
 associated performance benefits. Currently only boxed immutable vectors are
 supported, but let me know if you need other variants.
 
