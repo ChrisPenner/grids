@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 03b74cc957b0fdf5281a569ca5c4548ee1e5c3a0751523391aae61f72c752fa1
+-- hash: a9762c7345dd2ce0dbbd1c65d6e6529407c552773f52e506e39795e5ca9b3793
 
 name:           grids
 version:        0.1.1.0
@@ -30,7 +30,6 @@ library
   exposed-modules:
       Data.Grid
       Data.Grid.Lens
-      Data.Grid.Unsafe
   other-modules:
       Paths_grids
   hs-source-dirs:
@@ -41,7 +40,5 @@ library
     , distributive
     , finite-typelits
     , lens
-    , reflection
-    , singletons
     , vector
   default-language: Haskell2010

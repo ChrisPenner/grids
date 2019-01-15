@@ -24,10 +24,7 @@ dependencies:
 - distributive
 - vector
 - adjunctions
-- lens
 - finite-typelits
-- reflection
-- singletons
 
 library:
   source-dirs: src
