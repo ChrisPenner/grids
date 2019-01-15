@@ -27,7 +27,6 @@ module Data.Grid (
     , fromNestedLists
     , fromList
     , (//)
-                 , testEx
     ) where
 
 import           Data.Distributive
@@ -92,8 +91,6 @@ class (AllC KnownNat dims, KnownNat (GridSize dims)) => Dimensions (dims :: [Nat
 type family AllC (c :: x -> Constraint) (ts :: [x]) :: Constraint where
   AllC c '[] = ()
   AllC c (x:xs) = (c x, AllC c xs)
-
-instance Dimensions '[] where
 
 instance (KnownNat x) => Dimensions '[x] where
   toCoord _ i = i
@@ -185,19 +182,19 @@ fromList xs =
 (Grid v) // xs =
   Grid (v V.// fmap (first (fromFinite . fromCoord (Proxy @dims))) xs)
 
-testEx :: [Natural] -> String
-testEx ints = withSomeSing ints go
- where
-  go :: forall d . Sing (d :: [Nat]) -> String
-  go SNil            = undefined -- how $ L.natVal (Proxy @d)
-  go (SCons SNat xs) = undefined
-  -- go [SNat : xs] = undefined -- show $ L.natVal (Proxy @d)
+-- testEx :: [Natural] -> String
+-- testEx ints = withSomeSing ints go
+--  where
+--   go :: forall d . Sing (d :: [Nat]) -> String
+--   go SNil            = undefined -- how $ L.natVal (Proxy @d)
+--   go (SCons SNat xs) = undefined
+--   -- go [SNat : xs] = undefined -- show $ L.natVal (Proxy @d)
 
-class ToGrid (k :: [Nat]) where
-  toGrid :: Sing k -> (forall d. Dimensions d => Grid d () -> r)
+-- class ToGrid (k :: [Nat]) where
+--   toGrid :: Sing k -> (forall d. Dimensions d => Grid d () -> r)
 
-instance ToGrid (x:xs) where
-  toGrid (SCons SNat SNil) = pure ()
+-- instance ToGrid (x:xs) where
+--   toGrid (SCons SNat SNil) = pure ()
 
 -- existentializeGrid
 --   :: forall r
