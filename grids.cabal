@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 21db274f8abd8e6d956d24ef25c4ad5c0c1118727eccae42c59a1db28229edd3
+-- hash: c815969243459eda7607274717beb824e9f120574e23a23f10689af5e1896231
 
 name:           grids
 version:        0.2.0.0
@@ -30,6 +30,7 @@ library
   exposed-modules:
       Data.Grid
       Data.Grid.Lens
+      Data.Grid.Util
   other-modules:
       Paths_grids
   hs-source-dirs:
