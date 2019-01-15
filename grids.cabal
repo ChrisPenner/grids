@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a9762c7345dd2ce0dbbd1c65d6e6529407c552773f52e506e39795e5ca9b3793
+-- hash: 21db274f8abd8e6d956d24ef25c4ad5c0c1118727eccae42c59a1db28229edd3
 
 name:           grids
-version:        0.1.1.0
+version:        0.2.0.0
 description:    Arbitrary sized type-safe grids with useful combinators
 category:       Data Structures
 homepage:       https://github.com/ChrisPenner/grids#readme
@@ -39,6 +39,5 @@ library
     , base >=4.7 && <5
     , distributive
     , finite-typelits
-    , lens
     , vector
   default-language: Haskell2010

@@ -1,5 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Data.Grid.Lens (cell) where
 
 import Data.Grid
@@ -15,9 +17,12 @@ lens sa sbt afb s = sbt s <$> afb (sa s)
 
 -- | Focus an element of a grid
 cell
-  :: forall dims a. (Dimensions dims, Eq (Coord dims)) => Coord dims -> Lens' (Grid dims a) a
-cell c = lens get set 
-  where 
-    get = flip R.index c
-    vectorOffset = fromIntegral (fromCoord (Proxy @dims) c)
-    set (Grid v) new = Grid (v V.// [(vectorOffset, new)])
+  :: forall dims a
+   . (Dimensions dims, Eq (Coord dims))
+  => Coord dims
+  -> Lens' (Grid dims a) a
+cell c = lens get set
+ where
+  get          = flip R.index c
+  vectorOffset = fromIntegral (fromCoord (Proxy @dims) c)
+  set (Grid v) new = Grid (v V.// [(vectorOffset, new)])

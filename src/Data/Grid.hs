@@ -136,7 +136,7 @@ instance (Dimensions dims) => Representable (Grid dims) where
   index (Grid v) ind = v V.! fromIntegral (fromCoord (Proxy @dims) ind)
   tabulate f = Grid $ V.generate (fromIntegral $ gridSize (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
 
--- Computes the level of nesting requried to represent a given grid
+-- | Computes the level of nesting requried to represent a given grid
 -- dimensionality as a nested list
 --
 -- > NestedLists [2, 3] Int == [[Int]]
@@ -148,11 +148,6 @@ type family NestedLists (dims :: [Nat]) a where
 -- | Build a grid by selecting an element for each element
 generate :: forall dims a . Dimensions dims => (Int -> a) -> Grid dims a
 generate f = Grid $ V.generate (gridSize (Proxy @dims)) f
-
--- | Build a grid by selecting an element for each coordinate
-generateCoord
-  :: forall dims a . Dimensions dims => (Coord dims -> a) -> Grid dims a
-generateCoord f = generate (f . toCoord (Proxy @dims) . fromIntegral)
 
 chunkVector :: forall n a . KnownNat n => Proxy n -> V.Vector a -> [V.Vector a]
 chunkVector _ v

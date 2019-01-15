@@ -3,8 +3,9 @@
 [HACKAGE](http://hackage.haskell.org/package/grids)
 
 Grids can have an arbitrary amount of dimensions, specified by a type-level
-list of `Nat`s. They're backed by a single contiguous Vector and gain the associated performance benefits. Currently
-only boxed immutable vectors are supported, but let me know if you need other variants.
+list of `Nat`s. They're backed by a single contiguous Vector and gain the
+associated performance benefits. Currently only boxed immutable vectors are
+supported, but let me know if you need other variants.
 
 Here's how we might represent a Tic-Tac-Toe board:
 
@@ -17,7 +18,8 @@ ticTacToe :: Grid [3, 3] Piece
 ticTacToe = generate toPiece
 ```
 
-You can collapse the grid down to nested lists! The output type of `toNestedLists` depends on your dimensions, e.g.:
+You can collapse the grid down to nested lists! The output type of
+`toNestedLists` depends on your dimensions, e.g.:
 
 - `Grid [3, 3] Piece` will generate: `[[Piece]]`
 - `Grid [2, 2, 2] Char` will generate: `[[[Char]]]`
