@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1cda6d90a553486e21f3c2891176500a7ee9784608e0f0b142bb51c2c4ec541c
+-- hash: dcca20e7b46273c646e4534942d8756707bc8109a12f035cbfef2a42a25aefb2
 
 name:           grids
 version:        0.2.0.0
@@ -34,6 +34,8 @@ library
       Data.Grid.Internal.Coord
       Data.Grid.Internal.Dims
       Data.Grid.Internal.Mod
+      Data.Grid.Internal.Padded
+      Data.Grid.Internal.Pretty
       Data.Grid.Internal.Tagged
       Data.Grid.Internal.Types
       Data.Grid.Lens
@@ -48,6 +50,5 @@ library
     , comonad
     , distributive
     , finite-typelits
-    , show-prettyprint
     , vector
   default-language: Haskell2010

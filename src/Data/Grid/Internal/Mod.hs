@@ -12,12 +12,12 @@ import Data.Proxy
 newtype Mod (n :: Nat) = Mod Int
   deriving (Show, Eq, Ord)
 
-newMod :: forall m . (KnownNat m) => Int -> Mod m
-newMod n = Mod (n `mod` modulus)
-  where modulus = fromIntegral $ natVal (Proxy :: Proxy m)
+newMod :: forall m i . (Integral i) => i -> Mod m
+newMod = Mod . fromIntegral
 
-unMod :: Integral i => Mod n -> i
-unMod (Mod n) = fromIntegral n
+unMod :: forall n i. (KnownNat n) => Integral i => Mod n -> i
+unMod (Mod n) = fromIntegral (n `mod` modulus)
+  where modulus = fromIntegral $ natVal (Proxy @n)
 
 instance (KnownNat n) => Num (Mod n) where
   Mod a + Mod b = newMod (a + b)

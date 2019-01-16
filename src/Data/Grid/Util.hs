@@ -21,6 +21,7 @@ import Data.Functor.Compose
 
 import Control.Comonad
 import Control.Comonad.Representable.Store
+import Data.Maybe
 
 convolute
   :: forall f ind dims a b
@@ -35,6 +36,17 @@ convolute selectWindow f g =
       convoluted     = extend (f . experiment selectWindow) s
       (tabulator, _) = runStore convoluted
   in  tabulate tabulator
+
+threeByThree :: (Num x, Num y) => Grid ind '[3, 3] (x :# y)
+threeByThree = fromJust $ fromNestedLists
+  [ [(-1) :# (-1), (-1) :# 0, (-1) :# 1]
+  , [0 :# (-1), 0 :# 0, 0 :# 1]
+  , [1 :# (-1), 1 :# 0, 1 :# 1]
+  ]
+
+threeByThree' :: (Num x, Num y) => (x :# y) -> Grid ind '[3, 3] (x :# y)
+threeByThree' = traverse (+) threeByThree
+
 
 data Orth a =
   Orth
@@ -71,13 +83,13 @@ avg f | length f == 0 = 0
 mx :: Foldable f => f Int -> Int
 mx = maximum
 
-small :: Grid Tag '[5, 5] Int
+small :: Grid C '[5, 5] Int
 small = generate id
 
-med :: Grid Tag '[5, 5, 5] Int
+med :: Grid T '[5, 5, 5] Int
 med = generate id
 
-big :: Grid Tag '[5, 5, 5, 5] Int
+big :: Grid T '[5, 5, 5, 5] Int
 big = generate id
 
 

@@ -14,11 +14,14 @@ import           Data.Proxy
 newtype Clamp (n :: Nat) = Clamp Int
   deriving (Show, Eq, Ord)
 
-newClamp :: forall m . (KnownNat m) => Int -> Clamp m
-newClamp n = Clamp (max 0 $ min n (fromIntegral (natVal (Proxy @m))))
+newClamp :: (Integral i) => i -> Clamp m
+newClamp = Clamp . fromIntegral
 
-unClamp :: Integral i => Clamp n -> i
-unClamp (Clamp n) = fromIntegral n
+unClamp :: forall n i . (KnownNat n, Integral i) => Clamp n -> i
+unClamp (Clamp n) = fromIntegral (max 0 . min upperBound $ n)
+ where
+  lowerBound = 0
+  upperBound = max 0 (fromIntegral (natVal (Proxy @n)) - 1)
 
 instance (KnownNat n) => Num (Clamp n) where
   Clamp a + Clamp b = newClamp (a + b)

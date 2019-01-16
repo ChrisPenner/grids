@@ -18,7 +18,7 @@ import           Data.Proxy
 import           Data.Finite
 import           Data.Kind
 
-data Ind = Ordinal | Modular | Clamped | Simple | Unsafe | Tag
+data Ind = O | M | C | I | L | T
 
 -- | Used for constructing arbitrary depth coordinate lists 
 -- e.g. @('Finite' 2 ':#' 'Finite' 3)@
@@ -119,15 +119,15 @@ instance (KnownNat y, Sizeable xs, AsIndex xInd x, AsCoord xsCoord (y:xs)) => As
 -- > Coord [2, 3] == Finite 2 :# Finite 3
 -- > Coord [4, 3, 2] == Finite 4 :# Finite 3 :# Finite 2
 type family Coord (ind :: Ind) (dims :: [Nat]) where
-  Coord Unsafe '[_] = Int
-  Coord Unsafe (_:_) = [Int]
+  Coord L '[_] = Int
+  Coord L (_:_) = [Int]
   Coord ind '[n] = IndexOf ind n
   Coord ind (n:xs) = IndexOf ind n :# Coord ind xs
 
 type family IndexOf (ind :: Ind) (n :: Nat)
-type instance IndexOf Ordinal n = Finite n
-type instance IndexOf Modular n = Mod n
-type instance IndexOf Clamped n = Clamp n
-type instance IndexOf Unsafe n = Int
-type instance IndexOf Simple n = Int
-type instance IndexOf Tag n = Tagged n
+type instance IndexOf O n = Finite n
+type instance IndexOf M n = Mod n
+type instance IndexOf C n = Clamp n
+type instance IndexOf L n = Int
+type instance IndexOf I n = Int
+type instance IndexOf T n = Tagged n
