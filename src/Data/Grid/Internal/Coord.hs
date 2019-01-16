@@ -33,6 +33,10 @@ instance (KnownNat n) => AsIndex (Mod n) n where
   toIndex _ = newMod
   fromIndex _ = unMod
 
+instance AsIndex Int n where
+  toIndex _ = id
+  fromIndex _ = id
+
 instance {-# OVERLAPPABLE #-} (Integral i) => AsIndex i n where
   toIndex _ = fromIntegral
   fromIndex _ = fromIntegral
@@ -40,6 +44,31 @@ instance {-# OVERLAPPABLE #-} (Integral i) => AsIndex i n where
 class AsCoord c (dims :: [Nat]) where
   toCoord :: Proxy dims -> Int -> c
   fromCoord :: Proxy dims -> c -> Int
+
+instance (KnownNat x) => AsCoord [Int] '[x] where
+  toCoord _ n =
+    if n >= fromIntegral (natVal (Proxy @x))
+                       then error $ "coordinate out of bounds: " ++ show n
+                       else [n]
+  fromCoord _ [n] = if n >= fromIntegral (natVal (Proxy @x))
+                       then error $ "coordinate out of bounds: " ++ show n
+                       else n
+  fromCoord _ _ = error "coordinate mismatch"
+
+instance (KnownNat x, KnownNat y, Sizeable xs, AsCoord [Int] (y:xs)) => AsCoord [Int] (x:y:xs) where
+  toCoord _ n = if firstCoord >= fromIntegral (natVal (Proxy @x))
+                   then error ("coordinate out of bounds: " ++ show n)
+                   else firstCoord : toCoord (Proxy @(y:xs)) remainder
+    where
+      firstCoord = n `div` fromIntegral (gridSize (Proxy @(y:xs)))
+      remainder = n `mod` gridSize (Proxy @(y:xs))
+  fromCoord _ (x : ys) = if x >= fromIntegral (natVal (Proxy @x))
+                   then error ("coordinate out of bounds: " ++ show x)
+                   else firstPart + rest
+      where
+        firstPart = x * gridSize (Proxy @(y:xs))
+        rest = fromCoord (Proxy @(y:xs)) ys
+  fromCoord _ _ = error "coordinate mismatch"
 
 instance AsCoord () '[] where
   toCoord _ _ = ()
