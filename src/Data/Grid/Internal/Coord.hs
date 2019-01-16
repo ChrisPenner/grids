@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Grid.Internal.Coord where
 
@@ -36,9 +37,35 @@ instance (Num x, Num y) => Num (x :# y) where
   fromInteger n = error "fromInteger is not possible for (:#)"
   negate (x :# y) = negate x :# negate y
 
+instance (AsIndex (Mod n) n) => Enum (Mod n) where
+  toEnum = toIndex (Proxy @n)
+  fromEnum = fromIndex (Proxy @n)
+
+instance (AsIndex (Clamp n) n) => Enum (Clamp n) where
+  toEnum = toIndex (Proxy @n)
+  fromEnum = fromIndex (Proxy @n)
+
+instance (Inhabited x, Inhabited y) => Enum (x :# y) where
+  toEnum i = toEnum (i `div` membersOfY) :# toEnum (i `mod` membersOfY)
+    where
+      membersOfY = inhabitants (Proxy @y)
+  fromEnum (x :# y) = (fromEnum x * inhabitants (Proxy @y)) + fromEnum y
+
+class (Enum c) => Inhabited c where
+  inhabitants :: Proxy c -> Int
+
+instance (KnownNat n) => Inhabited (Clamp n) where
+  inhabitants _ = fromIntegral $ natVal (Proxy @n)
+
 class AsIndex c (n :: Nat) where
   toIndex :: Proxy n -> Int -> c
   fromIndex :: Proxy n -> c -> Int
+
+-- bounds :: forall n. KnownNat n => Proxy n -> (Int, Int)
+-- bounds _ = (0, fromIntegral (natVal (Proxy @n)) - 1)
+
+-- inhabitants :: forall n. KnownNat n => Proxy n -> Int
+-- inhabitants _ = fromIntegral (natVal (Proxy @n))
 
 instance (KnownNat n) => AsIndex (Finite n) n where
   toIndex _ = fromIntegral
@@ -52,12 +79,11 @@ instance (KnownNat n) => AsIndex (Tagged n) n where
   toIndex _ = Tagged
   fromIndex _ = unTagged
 
-
 instance (KnownNat n) => AsIndex (Clamp n) n where
   toIndex _ = newClamp
   fromIndex _ = unClamp
 
-instance AsIndex Int n where
+instance (KnownNat n) => AsIndex Int n where
   toIndex _ = id
   fromIndex _ = id
 
@@ -103,7 +129,7 @@ instance {-# OVERLAPPABLE #-} (AsIndex c n) => AsCoord c '[n] where
   fromCoord _ = fromIndex (Proxy @n)
 
 -- This instance is unnecessarily complicated to prevent overlapping instances
-instance (KnownNat y, Sizeable xs, AsIndex xInd x, AsCoord xsCoord (y:xs)) => AsCoord (xInd :# xsCoord) (x:y:xs) where
+instance (KnownNat x, KnownNat y, Sizeable xs, AsIndex xInd x, AsCoord xsCoord (y:xs)) => AsCoord (xInd :# xsCoord) (x:y:xs) where
   toCoord _ n = firstCoord :# toCoord (Proxy @(y:xs)) remainder
     where
       firstCoord = toIndex (Proxy @x) (n `div` fromIntegral (gridSize (Proxy @(y:xs))))
