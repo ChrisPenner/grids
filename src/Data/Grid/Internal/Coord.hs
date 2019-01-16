@@ -9,6 +9,7 @@
 module Data.Grid.Internal.Coord where
 
 import           Data.Grid.Internal.Mod
+import           Data.Grid.Internal.Clamp
 import           Data.Grid.Internal.Dims
 
 import           GHC.TypeNats                      hiding ( Mod )
@@ -16,7 +17,7 @@ import           Data.Proxy
 import           Data.Finite
 import           Data.Kind
 
-data Ind = Ordinal | Modular | Unsafe
+data Ind = Ordinal | Modular | Clamped | Unsafe
 
 -- | Used for constructing arbitrary depth coordinate lists 
 -- e.g. @('Finite' 2 ':#' 'Finite' 3)@
@@ -24,6 +25,15 @@ data x :# y = x :# y
   deriving (Show, Eq, Ord)
 
 infixr 9 :#
+
+instance (Num x, Num y) => Num (x :# y) where
+  (x :# y) + (x' :# y') = (x + x') :# (y + y')
+  a - b = a + (-b)
+  (x :# y) * (x' :# y') = (x * x') :# (y * y')
+  abs (x :# y) = abs x :# abs y
+  signum (x :# y) = signum x :# signum y
+  fromInteger n = error "fromInteger is not possible for (:#)"
+  negate (x :# y) = negate x :# negate y
 
 class AsIndex c (n :: Nat) where
   toIndex :: Proxy n -> Int -> c
@@ -36,6 +46,10 @@ instance (KnownNat n) => AsIndex (Finite n) n where
 instance (KnownNat n) => AsIndex (Mod n) n where
   toIndex _ = newMod
   fromIndex _ = unMod
+
+instance (KnownNat n) => AsIndex (Clamp n) n where
+  toIndex _ = newClamp
+  fromIndex _ = unClamp
 
 instance AsIndex Int n where
   toIndex _ = id
@@ -94,7 +108,6 @@ instance (KnownNat y, Sizeable xs, AsIndex xInd x, AsCoord xsCoord (y:xs)) => As
         firstPart = fromIndex (Proxy @x) x * gridSize (Proxy @(y:xs))
         rest = fromCoord (Proxy @(y:xs)) ys
 
-
 -- | The coordinate type for a given dimensionality
 --
 -- > Coord [2, 3] == Finite 2 :# Finite 3
@@ -108,4 +121,5 @@ type family Coord (ind :: Ind) (dims :: [Nat]) where
 type family IndexOf (ind :: Ind) (n :: Nat)
 type instance IndexOf Ordinal n = Finite n
 type instance IndexOf Modular n = Mod n
+type instance IndexOf Clamped n = Clamp n
 type instance IndexOf Unsafe n = Int

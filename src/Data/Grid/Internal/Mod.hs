@@ -10,7 +10,7 @@ import GHC.TypeNats hiding (Mod)
 import Data.Proxy
 
 newtype Mod (n :: Nat) = Mod Int
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 newMod :: forall m . (KnownNat m) => Int -> Mod m
 newMod n = Mod (n `mod` modulus)
