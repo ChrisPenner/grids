@@ -28,13 +28,13 @@ data x :# y = x :# y
 
 infixr 9 :#
 
-instance (Num x, Num y) => Num (x :# y) where
+instance (Num x, Num y, Inhabited x, Inhabited y) => Num (x :# y) where
   (x :# y) + (x' :# y') = (x + x') :# (y + y')
   a - b = a + (-b)
   (x :# y) * (x' :# y') = (x * x') :# (y * y')
   abs (x :# y) = abs x :# abs y
   signum (x :# y) = signum x :# signum y
-  fromInteger n = error "fromInteger is not possible for (:#)"
+  fromInteger = toEnum . fromIntegral
   negate (x :# y) = negate x :# negate y
 
 instance (AsIndex (Mod n) n) => Enum (Mod n) where
@@ -45,7 +45,8 @@ instance (AsIndex (Clamp n) n) => Enum (Clamp n) where
   toEnum = toIndex (Proxy @n)
   fromEnum = fromIndex (Proxy @n)
 
-instance (Inhabited x, Inhabited y) => Enum (x :# y) where
+instance (Num x, Num y, Inhabited x, Inhabited y) => Enum (x :# y) where
+  toEnum i | i < 0 = negate $ toEnum (abs i)
   toEnum i = toEnum (i `div` membersOfY) :# toEnum (i `mod` membersOfY)
     where
       membersOfY = inhabitants (Proxy @y)
@@ -57,15 +58,15 @@ class (Enum c) => Inhabited c where
 instance (KnownNat n) => Inhabited (Clamp n) where
   inhabitants _ = fromIntegral $ natVal (Proxy @n)
 
+instance (KnownNat n) => Inhabited (Mod n) where
+  inhabitants _ = fromIntegral $ natVal (Proxy @n)
+
+instance (KnownNat n) => Inhabited (Tagged n) where
+  inhabitants _ = fromIntegral $ natVal (Proxy @n)
+
 class AsIndex c (n :: Nat) where
   toIndex :: Proxy n -> Int -> c
   fromIndex :: Proxy n -> c -> Int
-
--- bounds :: forall n. KnownNat n => Proxy n -> (Int, Int)
--- bounds _ = (0, fromIntegral (natVal (Proxy @n)) - 1)
-
--- inhabitants :: forall n. KnownNat n => Proxy n -> Int
--- inhabitants _ = fromIntegral (natVal (Proxy @n))
 
 instance (KnownNat n) => AsIndex (Finite n) n where
   toIndex _ = fromIntegral
@@ -91,54 +92,54 @@ instance {-# OVERLAPPABLE #-} (Integral i) => AsIndex i n where
   toIndex _ = fromIntegral
   fromIndex _ = fromIntegral
 
-class AsCoord c (dims :: [Nat]) where
-  toCoord :: Proxy dims -> Int -> c
-  fromCoord :: Proxy dims -> c -> Int
+-- class AsCoord c (dims :: [Nat]) where
+--   toCoord :: Proxy dims -> Int -> c
+--   fromCoord :: Proxy dims -> c -> Int
 
-instance (KnownNat x) => AsCoord [Int] '[x] where
-  toCoord _ n =
-    if n >= fromIntegral (natVal (Proxy @x))
-                       then error $ "coordinate out of bounds: " ++ show n
-                       else [n]
-  fromCoord _ [n] = if n >= fromIntegral (natVal (Proxy @x))
-                       then error $ "coordinate out of bounds: " ++ show n
-                       else n
-  fromCoord _ _ = error "coordinate mismatch"
+-- instance (KnownNat x) => AsCoord [Int] '[x] where
+--   toCoord _ n =
+--     if n >= fromIntegral (natVal (Proxy @x))
+--                        then error $ "coordinate out of bounds: " ++ show n
+--                        else [n]
+--   fromCoord _ [n] = if n >= fromIntegral (natVal (Proxy @x))
+--                        then error $ "coordinate out of bounds: " ++ show n
+--                        else n
+--   fromCoord _ _ = error "coordinate mismatch"
 
-instance (KnownNat x, KnownNat y, Sizeable xs, AsCoord [Int] (y:xs)) => AsCoord [Int] (x:y:xs) where
-  toCoord _ n = if firstCoord >= fromIntegral (natVal (Proxy @x))
-                   then error ("coordinate out of bounds: " ++ show n)
-                   else firstCoord : toCoord (Proxy @(y:xs)) remainder
-    where
-      firstCoord = n `div` fromIntegral (gridSize (Proxy @(y:xs)))
-      remainder = n `mod` gridSize (Proxy @(y:xs))
-  fromCoord _ (x : ys) = if x >= fromIntegral (natVal (Proxy @x))
-                   then error ("coordinate out of bounds: " ++ show x)
-                   else firstPart + rest
-      where
-        firstPart = x * gridSize (Proxy @(y:xs))
-        rest = fromCoord (Proxy @(y:xs)) ys
-  fromCoord _ _ = error "coordinate mismatch"
+-- instance (KnownNat x, KnownNat y, Sizeable xs, AsCoord [Int] (y:xs)) => AsCoord [Int] (x:y:xs) where
+--   toCoord _ n = if firstCoord >= fromIntegral (natVal (Proxy @x))
+--                    then error ("coordinate out of bounds: " ++ show n)
+--                    else firstCoord : toCoord (Proxy @(y:xs)) remainder
+--     where
+--       firstCoord = n `div` fromIntegral (gridSize (Proxy @(y:xs)))
+--       remainder = n `mod` gridSize (Proxy @(y:xs))
+--   fromCoord _ (x : ys) = if x >= fromIntegral (natVal (Proxy @x))
+--                    then error ("coordinate out of bounds: " ++ show x)
+--                    else firstPart + rest
+--       where
+--         firstPart = x * gridSize (Proxy @(y:xs))
+--         rest = fromCoord (Proxy @(y:xs)) ys
+--   fromCoord _ _ = error "coordinate mismatch"
 
-instance AsCoord () '[] where
-  toCoord _ _ = ()
-  fromCoord _ () = 0
+-- instance AsCoord () '[] where
+--   toCoord _ _ = ()
+--   fromCoord _ () = 0
 
-instance {-# OVERLAPPABLE #-} (AsIndex c n) => AsCoord c '[n] where
-  toCoord _ = toIndex (Proxy @n)
-  fromCoord _ = fromIndex (Proxy @n)
+-- instance {-# OVERLAPPABLE #-} (AsIndex c n) => AsCoord c '[n] where
+--   toCoord _ = toIndex (Proxy @n)
+--   fromCoord _ = fromIndex (Proxy @n)
 
--- This instance is unnecessarily complicated to prevent overlapping instances
-instance (KnownNat x, KnownNat y, Sizeable xs, AsIndex xInd x, AsCoord xsCoord (y:xs)) => AsCoord (xInd :# xsCoord) (x:y:xs) where
-  toCoord _ n = firstCoord :# toCoord (Proxy @(y:xs)) remainder
-    where
-      firstCoord = toIndex (Proxy @x) (n `div` fromIntegral (gridSize (Proxy @(y:xs))))
-      remainder = n `mod` gridSize (Proxy @(y:xs))
-  fromCoord _ (x :# ys) =
-     toIndex (Proxy @x) (firstPart + rest)
-      where
-        firstPart = fromIndex (Proxy @x) x * gridSize (Proxy @(y:xs))
-        rest = fromCoord (Proxy @(y:xs)) ys
+-- -- This instance is unnecessarily complicated to prevent overlapping instances
+-- instance (KnownNat x, KnownNat y, Sizeable xs, AsIndex xInd x, AsCoord xsCoord (y:xs)) => AsCoord (xInd :# xsCoord) (x:y:xs) where
+--   toCoord _ n = firstCoord :# toCoord (Proxy @(y:xs)) remainder
+--     where
+--       firstCoord = toIndex (Proxy @x) (n `div` fromIntegral (gridSize (Proxy @(y:xs))))
+--       remainder = n `mod` gridSize (Proxy @(y:xs))
+--   fromCoord _ (x :# ys) =
+--      toIndex (Proxy @x) (firstPart + rest)
+--       where
+--         firstPart = fromIndex (Proxy @x) x * gridSize (Proxy @(y:xs))
+--         rest = fromCoord (Proxy @(y:xs)) ys
 
 -- | The coordinate type for a given dimensionality
 --

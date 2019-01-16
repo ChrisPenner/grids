@@ -65,13 +65,13 @@ newtype Grid ind (dims :: [Nat]) a =
 instance (PrettyList (NestedLists dims a), Dimensions dims, Show (NestedLists dims a)) => Show (Grid ind dims a) where
   show g = "fromNestedLists \n" ++ (unlines . fmap ("  " ++ ) . lines $ prettyList (toNestedLists g))
 
-instance (Dimensions dims, AsCoord (Coord ind dims) dims, Semigroup a) => Semigroup (Grid ind dims a) where
+instance (Dimensions dims, Enum (Coord ind dims), Semigroup a) => Semigroup (Grid ind dims a) where
   (<>) = liftA2 (<>)
 
-instance (Dimensions dims, AsCoord (Coord ind dims) dims, Monoid a) => Monoid (Grid ind dims a) where
+instance (Dimensions dims, Enum (Coord ind dims), Monoid a) => Monoid (Grid ind dims a) where
   mempty = pure mempty
 
-instance (Dimensions dims, AsCoord (Coord ind dims) dims) => Applicative (Grid ind dims) where
+instance (Dimensions dims, Enum (Coord ind dims)) => Applicative (Grid ind dims) where
   pure a = tabulate (const a)
   liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
@@ -102,13 +102,13 @@ instance (KnownNat (GridSize (x:y:xs)), KnownNat x, Dimensions (y:xs)) => Dimens
   nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (Proxy @(GridSize (y:xs))) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
 
-instance (Dimensions dims, AsCoord (Coord ind dims) dims) => Distributive (Grid ind dims) where
+instance (Dimensions dims, Enum (Coord ind dims)) => Distributive (Grid ind dims) where
   distribute = distributeRep
 
-instance (Dimensions dims, AsCoord (Coord ind dims) dims) => Representable (Grid ind dims) where
+instance (Dimensions dims, Enum (Coord ind dims)) => Representable (Grid ind dims) where
   type Rep (Grid ind dims) = Coord ind dims
-  index (Grid v) ind = v V.! fromCoord (Proxy @dims) ind
-  tabulate f = Grid $ V.generate (fromIntegral $ gridSize (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
+  index (Grid v) ind = v V.! fromEnum  ind
+  tabulate f = Grid $ V.generate (fromIntegral $ gridSize (Proxy @dims)) (f . toEnum  . fromIntegral)
 
 -- | Computes the level of nesting requried to represent a given grid
 -- dimensionality as a nested list
@@ -176,8 +176,8 @@ fromList xs =
 -- | Update elements of a grid
 (//)
   :: forall ind dims a
-   . (Dimensions dims, AsCoord (Coord ind dims) dims)
+   . (Dimensions dims, Enum (Coord ind dims))
   => Grid ind dims a
   -> [(Coord ind dims, a)]
   -> Grid ind dims a
-(Grid v) // xs = Grid (v V.// fmap (first (fromCoord (Proxy @dims))) xs)
+(Grid v) // xs = Grid (v V.// fmap (first fromEnum) xs)

@@ -25,7 +25,7 @@ import Data.Maybe
 
 convolute
   :: forall f ind dims a b
-   . (Functor f, Dimensions dims, AsCoord (Coord ind dims) dims)
+   . (Functor f, Dimensions dims, Enum (Coord ind dims))
   => (Coord ind dims -> f (Coord ind dims))
   -> (f a -> b)
   -> Grid ind dims a
@@ -44,9 +44,9 @@ threeByThree = fromJust $ fromNestedLists
   , [1 :# (-1), 1 :# 0, 1 :# 1]
   ]
 
-threeByThree' :: (Num x, Num y) => (x :# y) -> Grid ind '[3, 3] (x :# y)
+threeByThree'
+  :: (Num (x :# y), Num x, Num y) => (x :# y) -> Grid ind '[3, 3] (x :# y)
 threeByThree' = traverse (+) threeByThree
-
 
 data Orth a =
   Orth
