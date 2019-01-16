@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 61df49c63dd535c83311e9b3d14db3ddd5c60ff49f3d3c8f7b48ea0ac471d4d5
+-- hash: 219f9a7f9ecea5f2ad72d24c994fd2182905a393d26fe2c7f5ad3d18f19e6823
 
 name:           grids
 version:        0.2.0.0
@@ -34,6 +34,7 @@ library
       Data.Grid.Internal.Coord
       Data.Grid.Internal.Dims
       Data.Grid.Internal.Mod
+      Data.Grid.Internal.Tagged
       Data.Grid.Internal.Types
       Data.Grid.Lens
       Data.Grid.Util
@@ -44,6 +45,7 @@ library
   build-depends:
       adjunctions
     , base >=4.7 && <5
+    , comonad
     , distributive
     , finite-typelits
     , vector

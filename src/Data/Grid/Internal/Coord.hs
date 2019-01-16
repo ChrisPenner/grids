@@ -9,6 +9,7 @@
 module Data.Grid.Internal.Coord where
 
 import           Data.Grid.Internal.Mod
+import           Data.Grid.Internal.Tagged
 import           Data.Grid.Internal.Clamp
 import           Data.Grid.Internal.Dims
 
@@ -17,7 +18,7 @@ import           Data.Proxy
 import           Data.Finite
 import           Data.Kind
 
-data Ind = Ordinal | Modular | Clamped | Unsafe
+data Ind = Ordinal | Modular | Clamped | Simple | Unsafe | Tag
 
 -- | Used for constructing arbitrary depth coordinate lists 
 -- e.g. @('Finite' 2 ':#' 'Finite' 3)@
@@ -46,6 +47,11 @@ instance (KnownNat n) => AsIndex (Finite n) n where
 instance (KnownNat n) => AsIndex (Mod n) n where
   toIndex _ = newMod
   fromIndex _ = unMod
+
+instance (KnownNat n) => AsIndex (Tagged n) n where
+  toIndex _ = Tagged
+  fromIndex _ = unTagged
+
 
 instance (KnownNat n) => AsIndex (Clamp n) n where
   toIndex _ = newClamp
@@ -123,3 +129,5 @@ type instance IndexOf Ordinal n = Finite n
 type instance IndexOf Modular n = Mod n
 type instance IndexOf Clamped n = Clamp n
 type instance IndexOf Unsafe n = Int
+type instance IndexOf Simple n = Int
+type instance IndexOf Tag n = Tagged n

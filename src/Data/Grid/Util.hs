@@ -7,6 +7,9 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
 module Data.Grid.Util where
 
 import Data.Grid
@@ -14,15 +17,62 @@ import Data.Functor.Rep
 import GHC.TypeNats
 import Data.Kind
 import Control.Applicative
+import Data.Functor.Compose
 
+import Control.Comonad
 import Control.Comonad.Representable.Store
 
 convolute
-  :: IsSubgrid window dims
-  => (Grid ind window (Maybe a) -> b)
+  :: forall f ind dims a b
+   . (Functor f, Dimensions dims, AsCoord (Coord ind dims) dims)
+  => (Coord ind dims -> f (Coord ind dims))
+  -> (f a -> b)
   -> Grid ind dims a
   -> Grid ind dims b
-convolute f g = undefined
+convolute selectWindow f g =
+  let s = store (index g) undefined
+      convoluted :: Store (Grid ind dims) b
+      convoluted     = extend (f . experiment selectWindow) s
+      (tabulator, _) = runStore convoluted
+  in  tabulate tabulator
+
+data Orth a =
+  Orth
+    { up :: a
+    , right :: a
+    , down :: a
+    , left :: a
+    } deriving (Eq, Show, Functor, Traversable, Foldable)
+
+orthNeighbours
+  :: (KnownNat x, KnownNat y)
+  => (Tagged x :# Tagged y)
+  -> Compose Orth Maybe (Tagged x :# Tagged y)
+orthNeighbours c = Compose
+  (   toMaybe
+  <$> traverse
+        (+)
+        Orth
+          { up    = (0 :# (-1))
+          , right = (1 :# 0)
+          , down  = (0 :# 1)
+          , left  = (-1 :# 0)
+          }
+        c
+  )
+ where
+  toMaybe c@(x :# y) | not (inBounds x) || not (inBounds y) = Nothing
+                     | otherwise                            = Just c
+
+avg :: Foldable f => f Int -> Int
+avg f | length f == 0 = 0
+      | otherwise     = sum f `div` length f
+
+mx :: Foldable f => f Int -> Int
+mx = maximum
+
+simple :: Grid Tag '[5, 5] Int
+simple = generate id
 
 -- neighbouring
 --   :: forall ind dims window

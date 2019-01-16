@@ -25,6 +25,7 @@ dependencies:
 - vector
 - adjunctions
 - finite-typelits
+- comonad
 
 library:
   source-dirs: src
