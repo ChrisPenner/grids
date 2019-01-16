@@ -17,12 +17,12 @@ lens sa sbt afb s = sbt s <$> afb (sa s)
 
 -- | Focus an element of a grid
 cell
-  :: forall dims a
-   . (Dimensions dims, Eq (Coord dims))
-  => Coord dims
-  -> Lens' (Grid dims a) a
+  :: forall ind dims a
+   . (Dimensions dims, Eq (Coord ind dims), AsCoord (Coord ind dims) dims)
+  => Coord ind dims
+  -> Lens' (Grid ind dims a) a
 cell c = lens get set
  where
   get          = flip R.index c
-  vectorOffset = fromIntegral (fromCoord (Proxy @dims) c)
+  vectorOffset = fromCoord (Proxy @dims) c
   set (Grid v) new = Grid (v V.// [(vectorOffset, new)])

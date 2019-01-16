@@ -19,19 +19,22 @@ import Control.Comonad.Representable.Store
 
 convolute
   :: IsSubgrid window dims
-  => (Grid window (Maybe a) -> b)
-  -> Grid dims a
-  -> Grid dims b
+  => (Grid ind window (Maybe a) -> b)
+  -> Grid ind dims a
+  -> Grid ind dims b
 convolute f g = undefined
 
 neighbouring
-  :: forall dims window
-   . (Dimensions window, IsSubgrid window dims)
-  => Coord dims
-  -> Grid window (Coord dims)
+  :: forall ind dims window
+   . ( Dimensions window
+     , IsSubgrid window dims
+     , AsCoord (Coord ind window) window
+     )
+  => Coord ind dims
+  -> Grid ind window (Coord ind dims)
 neighbouring c = tabulate go
  where
-  go :: Coord window -> Coord dims
+  go :: Coord ind window -> Coord ind dims
   go w = undefined -- collapse c
 
 type family IsSubgrid (child :: [Nat]) (parent :: [Nat]):: Constraint where

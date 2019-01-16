@@ -23,7 +23,6 @@ module Data.Grid.Internal.Types
   , GridSize
   , Dimensions(..)
   , Coord
-  , (:#)(..)
   , NestedLists
   , generate
   , toNestedLists
@@ -33,6 +32,7 @@ module Data.Grid.Internal.Types
   )
 where
 
+import Data.Grid.Internal.Coord
 import           Data.Distributive
 import           Data.Functor.Rep
 import qualified Data.Vector                   as V
@@ -57,20 +57,20 @@ fromFinite = fromIntegral . getFinite
 -- > generate id :: Grid [2, 3] Int
 -- > (Grid [[0,1,2],
 -- >        [3,4,5]])
-newtype Grid (dims :: [Nat]) a =
+newtype Grid (ind :: Nat -> Type) (dims :: [Nat]) a =
   Grid  (V.Vector a)
   deriving (Eq, Functor, Foldable, Traversable)
 
-instance (Dimensions dims, Show (NestedLists dims a)) => Show (Grid dims a) where
+instance (Dimensions dims, Show (NestedLists dims a)) => Show (Grid ind dims a) where
   show g = "(Grid " ++ show (toNestedLists g) ++ ")"
 
-instance (Dimensions dims, Semigroup a) => Semigroup (Grid dims a) where
+instance (Dimensions dims, AsCoord (Coord ind dims) dims, Semigroup a) => Semigroup (Grid ind dims a) where
   (<>) = liftA2 (<>)
 
-instance (Dimensions dims, Monoid a) => Monoid (Grid dims a) where
+instance (Dimensions dims, AsCoord (Coord ind dims) dims, Monoid a) => Monoid (Grid ind dims a) where
   mempty = pure mempty
 
-instance (Dimensions dims) => Applicative (Grid dims) where
+instance (Dimensions dims, AsCoord (Coord ind dims) dims) => Applicative (Grid ind dims) where
   pure a = tabulate (const a)
   liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
@@ -80,26 +80,19 @@ type family GridSize (dims :: [Nat]) :: Nat where
   GridSize (x:'[]) = x
   GridSize (x:xs) = (x N.* GridSize xs)
 
--- | Used for constructing arbitrary depth coordinate lists 
--- e.g. @('Finite' 2 ':#' 'Finite' 3)@
-data x :# y = x :# y
-  deriving (Show, Eq, Ord)
-
-infixr 9 :#
-
 -- | The coordinate type for a given dimensionality
 --
 -- > Coord [2, 3] == Finite 2 :# Finite 3
 -- > Coord [4, 3, 2] == Finite 4 :# Finite 3 :# Finite 2
-type family Coord (dims :: [Nat]) = coord | coord -> dims where
-  Coord '[n] = Finite n
-  Coord (n:xs) = Finite n :# Coord xs
+type family Coord (ind :: Nat -> Type) (dims :: [Nat]) = coord | coord -> dims where
+  Coord ind '[n] = ind n
+  Coord ind (n:xs) = ind n :# Coord ind xs
 
 -- | Represents valid dimensionalities. All non empty lists of Nats have
 -- instances
 class (AllC KnownNat dims, KnownNat (GridSize dims)) => Dimensions (dims :: [Nat]) where
-  toCoord :: Proxy dims -> Finite (GridSize dims) -> Coord dims
-  fromCoord :: Proxy dims -> Coord dims -> Finite (GridSize dims)
+  -- toCoord :: Proxy dims -> Finite (GridSize dims) -> Coord dims
+  -- fromCoord :: Proxy dims -> Coord dims -> Finite (GridSize dims)
   gridSize
     :: Proxy dims -> Int
   gridSize _ = fromIntegral $ natVal (Proxy @(GridSize dims))
@@ -111,30 +104,30 @@ type family AllC (c :: x -> Constraint) (ts :: [x]) :: Constraint where
   AllC c (x:xs) = (c x, AllC c xs)
 
 instance (KnownNat x) => Dimensions '[x] where
-  toCoord _ i = i
-  fromCoord _ i = i
+  -- toCoord _ i = i
+  -- fromCoord _ i = i
   nestLists _ = V.toList
   unNestLists _ xs = xs
 
 instance (KnownNat (GridSize (x:y:xs)), KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
-  toCoord _ n = firstCoord :# toCoord (Proxy @(y:xs)) remainder
-    where
-      firstCoord = toFinite (n `div` fromIntegral (gridSize (Proxy @(y:xs))))
-      remainder = toFinite (fromFinite n `mod` gridSize (Proxy @(y:xs)))
-  fromCoord _ (x :# ys) =
-    toFinite $ firstPart + rest
-      where
-        firstPart = fromFinite x * gridSize (Proxy @(y:xs))
-        rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
+  -- toCoord _ n = firstCoord :# toCoord (Proxy @(y:xs)) remainder
+  --   where
+  --     firstCoord = toFinite (n `div` fromIntegral (gridSize (Proxy @(y:xs))))
+  --     remainder = toFinite (fromFinite n `mod` gridSize (Proxy @(y:xs)))
+  -- fromCoord _ (x :# ys) =
+  --   toFinite $ firstPart + rest
+  --     where
+  --       firstPart = fromFinite x * gridSize (Proxy @(y:xs))
+  --       rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
   nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (Proxy @(GridSize (y:xs))) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
 
-instance (Dimensions dims) => Distributive (Grid dims) where
+instance (Dimensions dims, AsCoord (Coord ind dims) dims) => Distributive (Grid ind dims) where
   distribute = distributeRep
 
-instance (Dimensions dims) => Representable (Grid dims) where
-  type Rep (Grid dims) = Coord dims
-  index (Grid v) ind = v V.! fromIntegral (fromCoord (Proxy @dims) ind)
+instance (Dimensions dims, AsCoord (Coord ind dims) dims) => Representable (Grid ind dims) where
+  type Rep (Grid ind dims) = Coord ind dims
+  index (Grid v) ind = v V.! fromCoord (Proxy @dims) ind
   tabulate f = Grid $ V.generate (fromIntegral $ gridSize (Proxy @dims)) (f . toCoord (Proxy @dims) . fromIntegral)
 
 -- | Computes the level of nesting requried to represent a given grid
@@ -147,7 +140,7 @@ type family NestedLists (dims :: [Nat]) a where
   NestedLists (_:xs) a = [NestedLists xs a]
 
 -- | Build a grid by selecting an element for each element
-generate :: forall dims a . Dimensions dims => (Int -> a) -> Grid dims a
+generate :: forall ind dims a . Dimensions dims => (Int -> a) -> Grid ind dims a
 generate f = Grid $ V.generate (gridSize (Proxy @dims)) f
 
 chunkVector :: forall n a . KnownNat n => Proxy n -> V.Vector a -> [V.Vector a]
@@ -164,7 +157,10 @@ chunkVector _ v
 -- > toNestedLists (G.generate id :: Grid [2, 3] Int)
 -- > [[0,1,2],[3,4,5]]
 toNestedLists
-  :: forall dims a . (Dimensions dims) => Grid dims a -> NestedLists dims a
+  :: forall ind dims a
+   . (Dimensions dims)
+  => Grid ind dims a
+  -> NestedLists dims a
 toNestedLists (Grid v) = nestLists (Proxy @dims) v
 
 -- | Turn a nested list structure into a Grid if the list is well formed. 
@@ -175,10 +171,10 @@ toNestedLists (Grid v) = nestLists (Proxy @dims) v
 -- > fromNestedLists [[0],[1,2]] :: Maybe (Grid [2, 3] Int)
 -- > Nothing
 fromNestedLists
-  :: forall dims a
+  :: forall ind dims a
    . Dimensions dims
   => NestedLists dims a
-  -> Maybe (Grid dims a)
+  -> Maybe (Grid ind dims a)
 fromNestedLists = fromList . unNestLists (Proxy @dims)
 
 -- | Convert a list into a Grid or fail if not provided the correct number of
@@ -189,20 +185,19 @@ fromNestedLists = fromList . unNestLists (Proxy @dims)
 -- > G.fromList [0, 1, 2, 3] :: Maybe (Grid [2, 3] Int)
 -- > Nothing
 fromList
-  :: forall a dims
+  :: forall a ind dims
    . (KnownNat (GridSize dims), Dimensions dims)
   => [a]
-  -> Maybe (Grid dims a)
+  -> Maybe (Grid ind dims a)
 fromList xs =
   let v = V.fromList xs
   in  if V.length v == gridSize (Proxy @dims) then Just $ Grid v else Nothing
 
 -- | Update elements of a grid
 (//)
-  :: forall dims a
-   . (Dimensions dims)
-  => Grid dims a
-  -> [(Coord dims, a)]
-  -> Grid dims a
-(Grid v) // xs =
-  Grid (v V.// fmap (first (fromFinite . fromCoord (Proxy @dims))) xs)
+  :: forall ind dims a
+   . (Dimensions dims, AsCoord (Coord ind dims) dims)
+  => Grid ind dims a
+  -> [(Coord ind dims, a)]
+  -> Grid ind dims a
+(Grid v) // xs = Grid (v V.// fmap (first (fromCoord (Proxy @dims))) xs)
