@@ -8,5 +8,5 @@ simpleGrid = generate id
 modGrid :: Grid Modular '[5, 5] Int
 modGrid = generate id
 
-clampedGrid :: Grid Clamped '[5, 5] Int
+clampedGrid :: Grid Clamped '[2, 2, 2, 2, 2, 2, 2] Int
 clampedGrid = generate id

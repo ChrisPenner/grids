@@ -71,8 +71,15 @@ avg f | length f == 0 = 0
 mx :: Foldable f => f Int -> Int
 mx = maximum
 
-simple :: Grid Tag '[5, 5] Int
-simple = generate id
+small :: Grid Tag '[5, 5] Int
+small = generate id
+
+med :: Grid Tag '[5, 5, 5] Int
+med = generate id
+
+big :: Grid Tag '[5, 5, 5, 5] Int
+big = generate id
+
 
 -- neighbouring
 --   :: forall ind dims window

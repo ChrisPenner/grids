@@ -32,7 +32,7 @@ module Data.Grid.Internal.Types
   )
 where
 
-import Data.Grid.Internal.Coord
+import           Data.Grid.Internal.Coord
 import           Data.Distributive
 import           Data.Functor.Rep
 import qualified Data.Vector                   as V
@@ -61,8 +61,8 @@ newtype Grid ind (dims :: [Nat]) a =
   Grid  (V.Vector a)
   deriving (Eq, Functor, Foldable, Traversable)
 
-instance (Dimensions dims, Show (NestedLists dims a)) => Show (Grid ind dims a) where
-  show g = "(Grid " ++ show (toNestedLists g) ++ ")"
+instance (PrettyList (NestedLists dims a), Dimensions dims, Show (NestedLists dims a)) => Show (Grid ind dims a) where
+  show g = "fromNestedLists \n" ++ (unlines . fmap ("  " ++ ) . lines $ prettyList (toNestedLists g))
 
 instance (Dimensions dims, AsCoord (Coord ind dims) dims, Semigroup a) => Semigroup (Grid ind dims a) where
   (<>) = liftA2 (<>)
@@ -83,8 +83,6 @@ type family GridSize (dims :: [Nat]) :: Nat where
 -- | Represents valid dimensionalities. All non empty lists of Nats have
 -- instances
 class (AllC KnownNat dims, KnownNat (GridSize dims)) => Dimensions (dims :: [Nat]) where
-  -- toCoord :: Proxy dims -> Finite (GridSize dims) -> Coord dims
-  -- fromCoord :: Proxy dims -> Coord dims -> Finite (GridSize dims)
   gridSize
     :: Proxy dims -> Int
   gridSize _ = fromIntegral $ natVal (Proxy @(GridSize dims))
@@ -96,21 +94,10 @@ type family AllC (c :: x -> Constraint) (ts :: [x]) :: Constraint where
   AllC c (x:xs) = (c x, AllC c xs)
 
 instance (KnownNat x) => Dimensions '[x] where
-  -- toCoord _ i = i
-  -- fromCoord _ i = i
   nestLists _ = V.toList
   unNestLists _ xs = xs
 
 instance (KnownNat (GridSize (x:y:xs)), KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
-  -- toCoord _ n = firstCoord :# toCoord (Proxy @(y:xs)) remainder
-  --   where
-  --     firstCoord = toFinite (n `div` fromIntegral (gridSize (Proxy @(y:xs))))
-  --     remainder = toFinite (fromFinite n `mod` gridSize (Proxy @(y:xs)))
-  -- fromCoord _ (x :# ys) =
-  --   toFinite $ firstPart + rest
-  --     where
-  --       firstPart = fromFinite x * gridSize (Proxy @(y:xs))
-  --       rest = fromFinite (fromCoord (Proxy @(y:xs)) ys)
   nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (Proxy @(GridSize (y:xs))) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
 
@@ -193,3 +180,18 @@ fromList xs =
   -> [(Coord ind dims, a)]
   -> Grid ind dims a
 (Grid v) // xs = Grid (v V.// fmap (first (fromCoord (Proxy @dims))) xs)
+
+class PrettyList l where
+  prettyList :: l -> String
+
+instance {-# OVERLAPPABLE #-} (Show a) => PrettyList [a] where
+  prettyList = show
+
+instance {-# OVERLAPPABLE #-} (Show a) => PrettyList [[a]] where
+  prettyList ls = "[" ++ intercalate "\n," (prettyList <$> ls) ++ "]"
+
+instance (Show a) => PrettyList [[[ a ]]] where
+  prettyList ls = "[" ++ intercalate "\n\n," (unlines . overRest (" " ++ ) . lines . prettyList <$> ls) ++ "]"
+    where
+      overRest f (l:ls) = l : fmap f ls
+      overRest f ls = ls

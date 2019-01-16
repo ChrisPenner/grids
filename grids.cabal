@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 219f9a7f9ecea5f2ad72d24c994fd2182905a393d26fe2c7f5ad3d18f19e6823
+-- hash: 1cda6d90a553486e21f3c2891176500a7ee9784608e0f0b142bb51c2c4ec541c
 
 name:           grids
 version:        0.2.0.0
@@ -48,5 +48,6 @@ library
     , comonad
     , distributive
     , finite-typelits
+    , show-prettyprint
     , vector
   default-language: Haskell2010
