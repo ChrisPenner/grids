@@ -24,18 +24,18 @@ convolute
   -> Grid ind dims b
 convolute f g = undefined
 
-neighbouring
-  :: forall ind dims window
-   . ( Dimensions window
-     , IsSubgrid window dims
-     , AsCoord (Coord ind window) window
-     )
-  => Coord ind dims
-  -> Grid ind window (Coord ind dims)
-neighbouring c = tabulate go
- where
-  go :: Coord ind window -> Coord ind dims
-  go w = undefined -- collapse c
+-- neighbouring
+--   :: forall ind dims window
+--    . ( Dimensions window
+--      , IsSubgrid window dims
+--      , AsCoord (Coord ind window) window
+--      )
+--   => Coord ind dims
+--   -> Grid ind window (Coord ind dims)
+-- neighbouring c = tabulate go
+--  where
+--   go :: Coord ind window -> Coord ind dims
+--   go w = undefined -- collapse c
 
 type family IsSubgrid (child :: [Nat]) (parent :: [Nat]):: Constraint where
   IsSubgrid '[] '[] = ()

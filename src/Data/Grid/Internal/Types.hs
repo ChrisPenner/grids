@@ -57,7 +57,7 @@ fromFinite = fromIntegral . getFinite
 -- > generate id :: Grid [2, 3] Int
 -- > (Grid [[0,1,2],
 -- >        [3,4,5]])
-newtype Grid (ind :: Nat -> Type) (dims :: [Nat]) a =
+newtype Grid ind (dims :: [Nat]) a =
   Grid  (V.Vector a)
   deriving (Eq, Functor, Foldable, Traversable)
 
@@ -79,14 +79,6 @@ type family GridSize (dims :: [Nat]) :: Nat where
   GridSize '[] = 0
   GridSize (x:'[]) = x
   GridSize (x:xs) = (x N.* GridSize xs)
-
--- | The coordinate type for a given dimensionality
---
--- > Coord [2, 3] == Finite 2 :# Finite 3
--- > Coord [4, 3, 2] == Finite 4 :# Finite 3 :# Finite 2
-type family Coord (ind :: Nat -> Type) (dims :: [Nat]) = coord | coord -> dims where
-  Coord ind '[n] = ind n
-  Coord ind (n:xs) = ind n :# Coord ind xs
 
 -- | Represents valid dimensionalities. All non empty lists of Nats have
 -- instances

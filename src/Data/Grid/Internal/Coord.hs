@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 
 module Data.Grid.Internal.Coord where
 
@@ -13,6 +14,9 @@ import           Data.Grid.Internal.Dims
 import           GHC.TypeNats                      hiding ( Mod )
 import           Data.Proxy
 import           Data.Finite
+import           Data.Kind
+
+data Ind = Ordinal | Modular | Unsafe
 
 -- | Used for constructing arbitrary depth coordinate lists 
 -- e.g. @('Finite' 2 ':#' 'Finite' 3)@
@@ -89,3 +93,19 @@ instance (KnownNat y, Sizeable xs, AsIndex xInd x, AsCoord xsCoord (y:xs)) => As
       where
         firstPart = fromIndex (Proxy @x) x * gridSize (Proxy @(y:xs))
         rest = fromCoord (Proxy @(y:xs)) ys
+
+
+-- | The coordinate type for a given dimensionality
+--
+-- > Coord [2, 3] == Finite 2 :# Finite 3
+-- > Coord [4, 3, 2] == Finite 4 :# Finite 3 :# Finite 2
+type family Coord (ind :: Ind) (dims :: [Nat]) where
+  Coord Unsafe '[_] = Int
+  Coord Unsafe (_:_) = [Int]
+  Coord ind '[n] = IndexOf ind n
+  Coord ind (n:xs) = IndexOf ind n :# Coord ind xs
+
+type family IndexOf (ind :: Ind) (n :: Nat)
+type instance IndexOf Ordinal n = Finite n
+type instance IndexOf Modular n = Mod n
+type instance IndexOf Unsafe n = Int
