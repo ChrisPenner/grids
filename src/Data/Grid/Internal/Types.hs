@@ -33,6 +33,7 @@ module Data.Grid.Internal.Types
 where
 
 import           Data.Grid.Internal.Coord
+import           Data.Grid.Internal.Pretty
 import           Data.Distributive
 import           Data.Functor.Rep
 import qualified Data.Vector                   as V
@@ -180,18 +181,3 @@ fromList xs =
   -> [(Coord ind dims, a)]
   -> Grid ind dims a
 (Grid v) // xs = Grid (v V.// fmap (first (fromCoord (Proxy @dims))) xs)
-
-class PrettyList l where
-  prettyList :: l -> String
-
-instance {-# OVERLAPPABLE #-} (Show a) => PrettyList [a] where
-  prettyList = show
-
-instance {-# OVERLAPPABLE #-} (Show a) => PrettyList [[a]] where
-  prettyList ls = "[" ++ intercalate "\n," (prettyList <$> ls) ++ "]"
-
-instance (Show a) => PrettyList [[[ a ]]] where
-  prettyList ls = "[" ++ intercalate "\n\n," (unlines . overRest (" " ++ ) . lines . prettyList <$> ls) ++ "]"
-    where
-      overRest f (l:ls) = l : fmap f ls
-      overRest f ls = ls
