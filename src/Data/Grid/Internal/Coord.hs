@@ -64,6 +64,9 @@ instance (KnownNat n) => Inhabited (Mod n) where
 instance (KnownNat n) => Inhabited (Tagged n) where
   inhabitants _ = fromIntegral $ natVal (Proxy @n)
 
+instance (Inhabited x, Num x, Inhabited y, Num y) => Inhabited (x :# y) where
+  inhabitants _ = inhabitants (Proxy @x) * inhabitants (Proxy @y)
+
 class AsIndex c (n :: Nat) where
   toIndex :: Proxy n -> Int -> c
   fromIndex :: Proxy n -> c -> Int

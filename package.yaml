@@ -26,6 +26,7 @@ dependencies:
 - adjunctions
 - finite-typelits
 - comonad
+- singletons
 
 library:
   source-dirs: src

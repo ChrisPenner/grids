@@ -10,18 +10,55 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE PolyKinds #-}
 module Data.Grid.Util where
 
-import Data.Grid
+import Data.Grid.Internal.Types
+import Data.Grid.Internal.Coord
+import Data.Grid.Internal.Nest
+import Data.Grid.Internal.Tagged
 import Data.Functor.Rep
 import GHC.TypeNats
 import Data.Kind
 import Control.Applicative
 import Data.Functor.Compose
+import Data.Foldable
+import Data.Coerce
 
 import Control.Comonad
 import Control.Comonad.Representable.Store
 import Data.Maybe
+import Data.Proxy
+
+criticalError :: a
+criticalError = error
+  "Something went wrong, please report this issue to the maintainer of grids"
+
+autoConvolute
+  :: forall window dims ind a b
+   . ( Dimensions dims
+     , Enum (Coord ind dims)
+     , Num (Coord ind dims)
+     , Coercible (Coord ind window) (Coord ind dims)
+     , Neighboring (Coord ind window) (Grid ind window)
+     , (Num (Coord ind window))
+     )
+  => (Grid ind window a -> b)
+  -> Grid ind dims a
+  -> Grid ind dims b
+autoConvolute f g =
+  let s = store (index g) criticalError
+      convoluted :: Store (Grid ind dims) b
+      convoluted     = extend (f . experiment (c2 . ner . c1)) s
+      (tabulator, _) = runStore convoluted
+  in  tabulate tabulator
+ where
+  ner :: Coord ind window -> Grid ind window (Coord ind window)
+  ner = neighboring
+  c1 :: Coord ind dims -> Coord ind window
+  c1 = coerce
+  c2 :: Grid ind window (Coord ind window) -> Grid ind window (Coord ind dims)
+  c2 = coerce
 
 convolute
   :: forall f ind dims a b
@@ -31,7 +68,7 @@ convolute
   -> Grid ind dims a
   -> Grid ind dims b
 convolute selectWindow f g =
-  let s = store (index g) undefined
+  let s = store (index g) criticalError
       convoluted :: Store (Grid ind dims) b
       convoluted     = extend (f . experiment selectWindow) s
       (tabulator, _) = runStore convoluted
@@ -78,13 +115,13 @@ avg f | null f    = 0
 mx :: Foldable f => f Int -> Int
 mx = maximum
 
-small :: Grid C '[5, 5] Int
+small :: Grid C '[3, 3] Int
 small = generate id
 
-med :: Grid T '[5, 5, 5] Int
+med :: Grid C '[3, 3, 3] Int
 med = generate id
 
-big :: Grid T '[5, 5, 5, 5] Int
+big :: Grid C '[5, 5, 5, 5] Int
 big = generate id
 
 
@@ -106,6 +143,28 @@ type family HeadC xs where
 class Collapsable c where
   collapse :: c -> [Int]
   expand :: [Int] -> c
+
+class Neighboring c g where
+  neighbors :: g c
+
+instance {-# OVERLAPPING #-} (Inhabited c, KnownNat n) => Neighboring c (Grid ind '[n]) where
+  neighbors = fromList' . fmap toEnum . fmap (subtract (numVals `div` 2)) . take numVals $ [0 .. ]
+    where
+      numVals = inhabitants (Proxy @c)
+
+instance (Neighboring x (Grid ind '[n]), Neighboring y (Grid ind ns)) => Neighboring (x :# y) (Grid ind (n:ns)) where
+  neighbors = joinGrid (addCoord <$> currentLevelNeighbors)
+    where
+      addCoord :: x -> Grid ind ns (x :# y)
+      addCoord x = (x :#) <$> nestedNeighbors
+      nestedNeighbors :: Grid ind ns y
+      nestedNeighbors = neighbors
+      currentLevelNeighbors :: Grid ind '[n] x
+      currentLevelNeighbors = neighbors
+
+neighboring :: (Num c, Neighboring c (Grid ind dims)) => c -> Grid ind dims c
+neighboring c = (c +) <$> neighbors
+
 
 -- class (Applicative f) => TraverseHappy c f where
 --   traversal :: (forall n. KnownNat n => Finite n -> f (Finite n)) -> c -> f c
@@ -131,3 +190,11 @@ class Collapsable c where
 -- adjust f = packFinite . f . fromIntegral
 
 -- adjustCoord :: (Int -> Int) -> 
+
+-- class Surround c where
+--   surrounding :: Int -> c -> [ c ]
+
+-- instance (Enum c) => Surround c where
+--   surrounding n c = (fromEnum c `div` 2)
+--     where
+--       mid = fromEnum c

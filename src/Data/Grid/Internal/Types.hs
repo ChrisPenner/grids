@@ -27,7 +27,9 @@ module Data.Grid.Internal.Types
   , generate
   , toNestedLists
   , fromNestedLists
+  , fromNestedLists'
   , fromList
+  , fromList'
   , (//)
   )
 where
@@ -44,6 +46,7 @@ import           Data.Finite
 import           Control.Applicative
 import           Data.List
 import           Data.Bifunctor
+import           Data.Maybe
 
 toFinite :: (KnownNat n) => Integral m => m -> Finite n
 toFinite = finite . fromIntegral
@@ -59,7 +62,7 @@ fromFinite = fromIntegral . getFinite
 -- > (Grid [[0,1,2],
 -- >        [3,4,5]])
 newtype Grid ind (dims :: [Nat]) a =
-  Grid  (V.Vector a)
+  Grid  {toVector :: V.Vector a}
   deriving (Eq, Functor, Foldable, Traversable)
 
 instance (PrettyList (NestedLists dims a), Dimensions dims, Show (NestedLists dims a)) => Show (Grid ind dims a) where
@@ -157,6 +160,14 @@ fromNestedLists
   -> Maybe (Grid ind dims a)
 fromNestedLists = fromList . unNestLists (Proxy @dims)
 
+-- | Partial variant of 'fromNestedLists' which errors on malformed input
+fromNestedLists'
+  :: forall ind dims a
+   . Dimensions dims
+  => NestedLists dims a
+  -> Grid ind dims a
+fromNestedLists' = fromJust . fromNestedLists
+
 -- | Convert a list into a Grid or fail if not provided the correct number of
 -- elements
 --
@@ -172,6 +183,14 @@ fromList
 fromList xs =
   let v = V.fromList xs
   in  if V.length v == gridSize (Proxy @dims) then Just $ Grid v else Nothing
+
+-- | Partial variant of 'fromList' which errors on malformed input
+fromList'
+  :: forall a ind dims
+   . (KnownNat (GridSize dims), Dimensions dims)
+  => [a]
+  -> Grid ind dims a
+fromList' = fromJust . fromList
 
 -- | Update elements of a grid
 (//)
