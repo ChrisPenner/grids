@@ -47,6 +47,7 @@ instance (KnownNat n) => Enum (Index n Mod) where
 
 type family ShowIndex (i::Ind) :: Symbol where
   ShowIndex Clamp = "Clamp"
+  ShowIndex Mod = "Mod"
 
 coerceIndex :: Index n (i :: Ind) -> Index n (j :: Ind)
 coerceIndex = unsafeCoerce

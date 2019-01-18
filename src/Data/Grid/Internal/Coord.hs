@@ -13,7 +13,6 @@
 
 module Data.Grid.Internal.Coord where
 
-import           Data.Grid.Internal.Dims
 import           Data.Grid.Internal.Index
 
 import           GHC.TypeNats                      hiding ( Mod )
@@ -26,8 +25,8 @@ import           Data.Coerce
 
 
 data Coord (dims :: [Nat]) (ind :: Ind) where
-  (:#) :: (Bounded (Coord ns ind), KnownNat n, Num (Coord ns ind), Enum (Coord ns ind)) => Index n ind -> Coord ns ind -> Coord (n:ns) ind
-  Coord :: (KnownNat n, Num (Coord '[n] ind), Enum (Coord '[n] ind)) => Index n ind -> Coord '[n] ind
+  (:#) :: Index n ind -> Coord ns ind -> Coord (n:ns) ind
+  Coord :: Index n ind -> Coord '[n] ind
 
 instance (KnownSymbol (ShowIndex ind)) => Show (Coord dims ind)
   where

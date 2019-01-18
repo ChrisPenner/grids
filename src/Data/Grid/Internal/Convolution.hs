@@ -37,8 +37,7 @@ criticalError = error
 
 autoConvolute
   :: forall window ind dims a b
-   . ( Indexable dims ind
-     , Indexable window ind
+   . ( Indexable window ind
      , Indexable dims Clamp
      , Neighboring (Coord window ind) (Grid window)
      )
@@ -49,7 +48,7 @@ autoConvolute = convolute @ind window
 
 gconvolute
   :: forall ind dims f a b
-   . (Functor f, Indexable dims ind, Indexable dims Clamp)
+   . (Functor f, Indexable dims Clamp)
   => (Coord dims ind -> f (Coord dims ind))
   -> (f a -> b)
   -> Grid dims a
@@ -69,7 +68,7 @@ gconvolute selectWindow f g =
 
 convolute
   :: forall ind window dims a b
-   . (Indexable dims ind, Indexable dims Clamp)
+   . (Indexable dims Clamp)
   => (Coord dims ind -> Grid window (Coord dims ind))
   -> (Grid window a -> b)
   -> Grid dims a
@@ -78,7 +77,7 @@ convolute selectWindow f g = gconvolute selectWindow f g
 
 safeConvolute
   :: forall ind window dims a b
-   . (Indexable dims ind, Indexable dims Clamp)
+   . (Indexable dims Clamp)
   => (Coord dims ind -> Grid window (Coord dims ind))
   -> (Grid window (Maybe a) -> b)
   -> Grid dims a
@@ -148,7 +147,7 @@ instance {-# OVERLAPPING #-} (KnownNat n, Enum (Index n ind)) => Neighboring (Co
     where
       numVals = inhabitants @(Coord '[n] ind)
 
-instance (KnownNat n, Bounded (Coord ns ind), Enum (Coord ns ind), Num (Coord ns ind), Enum (Index n ind), Neighboring (Coord ns ind) (Grid ns)) => Neighboring (Coord (n:ns) ind) (Grid (n:ns)) where
+instance (KnownNat n, Enum (Index n ind), Neighboring (Coord ns ind) (Grid ns)) => Neighboring (Coord (n:ns) ind) (Grid (n:ns)) where
   neighbors = joinGrid (addCoord <$> currentLevelNeighbors)
     where
       -- addCoord :: (Coord '[n] ind) -> Grid '[n] (Grid ns (Coord (n:ns) ind))

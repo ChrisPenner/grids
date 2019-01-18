@@ -10,6 +10,14 @@ extra-source-files:
 - README.md
 - ChangeLog.md
 
+default-extensions:
+  - KindSignatures
+  - PolyKinds
+  - TypeApplications
+  - ScopedTypeVariables
+  - TypeOperators
+  - TypeFamilies
+
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
 category:            Data Structures
