@@ -69,13 +69,13 @@ newtype Grid (dims :: [Nat]) a =
 instance (PrettyList (NestedLists dims a), Dimensions dims, Show (NestedLists dims a)) => Show (Grid dims a) where
   show g = "fromNestedLists \n" ++ (unlines . fmap ("  " ++ ) . lines $ prettyList (toNestedLists g))
 
-instance (Dimensions dims, Semigroup a, Enum (Coord dims C)) => Semigroup (Grid dims a) where
+instance (Dimensions dims, Semigroup a, Enum (Coord dims Clamp)) => Semigroup (Grid dims a) where
   (<>) = liftA2 (<>)
 
-instance (Dimensions dims, Monoid a, Enum (Coord dims C)) => Monoid (Grid dims a) where
+instance (Dimensions dims, Monoid a, Enum (Coord dims Clamp)) => Monoid (Grid dims a) where
   mempty = pure mempty
 
-instance (Dimensions dims, Enum (Coord dims C)) => Applicative (Grid dims) where
+instance (Dimensions dims, Enum (Coord dims Clamp)) => Applicative (Grid dims) where
   pure a = tabulate (const a)
   liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
@@ -106,11 +106,11 @@ instance (KnownNat (GridSize (x:y:xs)), KnownNat x, Dimensions (y:xs)) => Dimens
   nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (Proxy @(GridSize (y:xs))) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
 
-instance (Dimensions dims, Enum (Coord dims C)) => Distributive (Grid dims) where
+instance (Dimensions dims, Enum (Coord dims Clamp)) => Distributive (Grid dims) where
   distribute = distributeRep
 
-instance (Dimensions dims, Enum (Coord dims C)) => Representable (Grid dims) where
-  type Rep (Grid dims) = Coord dims C
+instance (Dimensions dims, Enum (Coord dims Clamp)) => Representable (Grid dims) where
+  type Rep (Grid dims) = Coord dims Clamp
   index (Grid v) ind = v V.! fromEnum  ind
   tabulate f = Grid $ V.generate (fromIntegral $ gridSize (Proxy @dims)) (f . toEnum  . fromIntegral)
 

@@ -9,12 +9,12 @@ import Data.Functor.Compose
 import Data.Coerce
 import Data.Foldable
 import Data.Functor.Rep
-import GHC.TypeNats
+import GHC.TypeNats hiding (Mod)
 
 simpleGrid :: Grid '[5, 5] Int
 simpleGrid = generate id
 
-coordGrid :: Grid '[5, 5] (Coord '[5, 5] 'C)
+coordGrid :: Grid '[5, 5] (Coord '[5, 5] Clamp)
 coordGrid = tabulate id
 
 
@@ -45,13 +45,13 @@ threeByThree = fromJust $ fromNestedLists
   , [1 :# (-1), 1 :# 0, 1 :# 1]
   ]
 
-threeByThree' :: (Coord '[3, 3] C) -> Grid '[3, 3] (Coord '[3, 3] C)
+threeByThree' :: (Coord '[3, 3] Clamp) -> Grid '[3, 3] (Coord '[3, 3] Clamp)
 threeByThree' = traverse (+) threeByThree
 
 gauss
   :: ( Dimensions dims
-     , Enum (Coord dims C)
-     , (Neighboring (Coord '[3, 3] C) (Grid '[3, 3]))
+     , Enum (Coord dims Clamp)
+     , (Neighboring (Coord '[3, 3] Clamp) (Grid '[3, 3]))
      )
   => Grid dims Double
   -> Grid dims Double
@@ -66,7 +66,7 @@ seeNeighboring = safeAutoConvolute go
   go :: Grid '[3, 3] (Maybe a) -> Grid '[3, 3] (Maybe a)
   go = coerce
 
-coords :: Grid '[3, 3] (Coord '[3, 3] C)
+coords :: Grid '[3, 3] (Coord '[3, 3] Clamp)
 coords = tabulate id
 
 doubleGrid :: Grid '[3, 3] Double
@@ -80,8 +80,8 @@ myGauss = safeAutoConvolute @'[3, 3] gauss'
   where gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
 
 pacmanGauss
-  :: (Dimensions dims, Enum (Coord dims M), Enum (Coord dims C))
+  :: (Dimensions dims, Enum (Coord dims Mod), Enum (Coord dims Clamp))
   => Grid dims Double
   -> Grid dims Double
-pacmanGauss = autoConvolute @'[3, 3] @M gauss'
+pacmanGauss = autoConvolute @'[3, 3] @Mod gauss'
   where gauss' g = (sum g) / fromIntegral (length g)

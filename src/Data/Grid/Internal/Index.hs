@@ -5,16 +5,15 @@
 {-# LANGUAGE TypeApplications #-}
 module Data.Grid.Internal.Index where
 
-import GHC.TypeNats
-import GHC.TypeLits hiding (natVal)
+import GHC.TypeNats hiding (Mod)
+import GHC.TypeLits hiding (natVal, Mod)
 import Data.Proxy
 import Data.Kind
 import Data.Coerce
 
-data Ind = O | M | C | L | T
+data Ind = Mod | Clamp
 data Index (n :: Nat) (ind :: Ind) where
   Index :: KnownNat n => Int -> Index n ind
-  -- deriving ( Num, Ord, Eq)
 
 instance (KnownSymbol (ShowIndex ind)) => Show (Index n ind) where
   show (Index n) =  symbolVal (Proxy @(ShowIndex ind)) ++ " " ++ show n
@@ -35,17 +34,17 @@ instance (KnownNat n) => Bounded (Index n ind) where
   minBound = 0
   maxBound = fromIntegral (natVal (Proxy @n)) - 1
 
-instance (KnownNat n) => Enum (Index n C) where
+instance (KnownNat n) => Enum (Index n Clamp) where
   toEnum = Index
   fromEnum (Index n) = fromIntegral (max minBound . min maxBound $ n)
 
-instance (KnownNat n) => Enum (Index n M) where
+instance (KnownNat n) => Enum (Index n Mod) where
   toEnum = Index
   fromEnum (Index n) = fromIntegral (n `mod` modulus)
     where modulus = fromIntegral $ natVal (Proxy @n)
 
 type family ShowIndex (i::Ind) :: Symbol where
-  ShowIndex C = "C"
+  ShowIndex Clamp = "Clamp"
 
 coerceIndex :: Index n (i :: Ind) -> Index n (j :: Ind)
 coerceIndex = coerce

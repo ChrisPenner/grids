@@ -13,9 +13,6 @@
 
 module Data.Grid.Internal.Coord where
 
-import           Data.Grid.Internal.Mod
-import           Data.Grid.Internal.Tagged
-import           Data.Grid.Internal.Clamp
 import           Data.Grid.Internal.Dims
 import           Data.Grid.Internal.Index
 
