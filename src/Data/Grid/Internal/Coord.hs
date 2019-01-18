@@ -9,7 +9,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Data.Grid.Internal.Coord where
 
@@ -20,6 +20,7 @@ import           Data.Grid.Internal.Dims
 import           Data.Grid.Internal.Index
 
 import           GHC.TypeNats                      hiding ( Mod )
+import           GHC.TypeLits
 import           Data.Proxy
 import           Data.Finite
 import           Data.Kind
@@ -28,6 +29,13 @@ import           Data.Kind
 data Coord (dims :: [Nat]) (ind :: Ind) where
   (:#) :: KnownNat n => Index n ind -> Coord ns ind -> Coord (n:ns) ind
   Coord :: KnownNat n => Index n ind -> Coord '[n] ind
+
+instance (KnownSymbol (ShowIndex ind)) => Show (Coord dims ind)
+  where
+    show (x :# y) = show x ++ " :# " ++ show y
+    show (Coord x) = show x
+
+-- deriving instance (KnownSymbol (ShowIndex ind)) => Show (Coord dims ind)
 
 infixr 9 :#
 
@@ -50,9 +58,17 @@ instance (Enum (Coord ns ind), Num (Coord ns ind), KnownNat n, Enum (Index n ind
   fromInteger = toEnum . fromIntegral
   negate (x :# y) = negate x :# negate y
 
+instance {-# OVERLAPPING #-} (KnownNat n) => Bounded (Coord '[ n ] ind) where
+  minBound = Coord minBound
+  maxBound = Coord maxBound
+
 instance (KnownNat n, Bounded (Coord ns ind)) => Bounded (Coord (n:ns) ind) where
   minBound = minBound :# minBound
   maxBound = maxBound :# maxBound
+
+instance {-# OVERLAPPING #-} (KnownNat n, Enum (Index n ind)) => Enum (Coord '[n] ind) where
+  toEnum i = Coord (toEnum i)
+  fromEnum (Coord i) = fromEnum i
 
 instance (KnownNat n, Num (Coord (n:ns) ind), Enum (Index n ind), Enum (Coord ns ind), Bounded (Coord ns ind)) => Enum (Coord (n:ns) ind) where
   toEnum i | i < 0 = negate $ toEnum (abs i)
@@ -137,8 +153,8 @@ inhabitants = fromEnum (maxBound @x) + 1
 class SoftBounded c where
   inBounds :: c -> Bool
 
-instance {-# OVERLAPPABLE #-} (Bounded c, Ord c) => SoftBounded c where
-  inBounds c = c >= minBound && c <= maxBound
+instance {-# OVERLAPPING #-} (SoftBounded (Index n ind)) => SoftBounded (Coord '[n] ind) where
+  inBounds (Coord c) = inBounds c
 
-instance {-# OVERLAPPING #-} (SoftBounded (Index n ind), SoftBounded (Coord ns ind)) => SoftBounded (Coord (n:ns) ind) where
+instance (SoftBounded (Index n ind), SoftBounded (Coord ns ind)) => SoftBounded (Coord (n:ns) ind) where
   inBounds (x :# y) = inBounds x && inBounds y

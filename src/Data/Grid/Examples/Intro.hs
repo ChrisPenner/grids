@@ -1,16 +1,20 @@
 {-# LANGUAGE PolyKinds #-}
 module Data.Grid.Examples.Intro where
 
--- import Data.Grid
--- import Data.Maybe
--- import Data.Functor.Compose
--- import Data.Coerce
--- import Data.Foldable
--- import Data.Functor.Rep
--- import GHC.TypeNats
+import Data.Grid
+import Data.Maybe
+import Data.Functor.Compose
+import Data.Coerce
+import Data.Foldable
+import Data.Functor.Rep
+import GHC.TypeNats
 
--- simpleGrid :: Grid L '[5, 5] Int
--- simpleGrid = generate id
+simpleGrid :: Grid '[5, 5] Int
+simpleGrid = generate id
+
+coordGrid :: Grid '[5, 5] (Coord '[5, 5] 'C)
+coordGrid = tabulate id
+
 
 -- modGrid :: Grid M '[5, 5] Int
 -- modGrid = generate id

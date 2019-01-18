@@ -6,10 +6,12 @@ module Data.Grid
   , module Data.Grid.Internal.Clamp
   , module Data.Grid.Internal.Tagged
   , module Data.Grid.Internal.Convolution
+  , module Data.Grid.Internal.Index
   )
 where
 
 import           Data.Grid.Internal.Types
+import           Data.Grid.Internal.Index
 import           Data.Grid.Internal.Coord
 import           Data.Grid.Internal.Mod
 import           Data.Grid.Internal.Tagged

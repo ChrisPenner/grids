@@ -6,7 +6,9 @@
 module Data.Grid.Internal.Index where
 
 import GHC.TypeNats
+import GHC.TypeLits hiding (natVal)
 import Data.Proxy
+import Data.Kind
 
 -- type IndexC c = (Enum c, Bounded c, Num c, Ord c, SoftBounded c)
 
@@ -15,7 +17,9 @@ data Index (n :: Nat) (ind :: Ind) where
   Index :: KnownNat n => Int -> Index n ind
   -- deriving ( Num, Ord, Eq)
 
-deriving instance Show (Index n ind)
+instance (KnownSymbol (ShowIndex ind)) => Show (Index n ind) where
+  show (Index n) =  symbolVal (Proxy @(ShowIndex ind)) ++ " " ++ show n
+
 deriving instance Ord (Index n ind)
 deriving instance Eq (Index n ind)
 
@@ -35,3 +39,6 @@ instance (KnownNat n) => Bounded (Index n ind) where
 instance (KnownNat n) => Enum (Index n C) where
   toEnum = Index
   fromEnum (Index n) = fromIntegral (max minBound . min maxBound $ n)
+
+type family ShowIndex (i::Ind) :: Symbol where
+  ShowIndex C = "C"
