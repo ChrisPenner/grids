@@ -11,6 +11,7 @@
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 module Data.Grid.Internal.Convolution where
 
 import Data.Grid.Internal.Types
@@ -37,55 +38,49 @@ criticalError = error
 autoConvolute
   :: forall window dims ind a b
    . ( Dimensions dims
-     , Enum (Coord ind dims)
+     , Index (Coord ind dims)
+     , Index (Coord ind window)
      , Coercible (Coord ind window) (Coord ind dims)
      , Neighboring (Coord ind window) (Grid ind window)
-     , (Num (Coord ind window))
      )
   => (Grid ind window a -> b)
   -> Grid ind dims a
   -> Grid ind dims b
-autoConvolute = convolute (fromWindow . neighboring . toWindow)
- where
-  toWindow :: Coord ind dims -> Coord ind window
-  toWindow = coerce
-  fromWindow
-    :: Grid ind window (Coord ind window) -> Grid ind window (Coord ind dims)
-  fromWindow = coerce
+autoConvolute = convolute (window @window @dims)
 
-convolute
-  :: forall f ind dims a b
+gconvolute
+  :: forall dims ind f a b
    . (Functor f, Dimensions dims, Enum (Coord ind dims))
   => (Coord ind dims -> f (Coord ind dims))
   -> (f a -> b)
   -> Grid ind dims a
   -> Grid ind dims b
-convolute selectWindow f g =
+gconvolute selectWindow f g =
   let s = store (index g) criticalError
       convoluted :: Store (Grid ind dims) b
       convoluted     = extend (f . experiment selectWindow) s
       (tabulator, _) = runStore convoluted
   in  tabulate tabulator
 
-safeConvolute
+convolute
   :: forall window dims ind a b
-   . ( Dimensions dims
-     , Coercible (Coord ind window) (Coord ind dims)
-     , Neighboring (Coord ind window) (Grid ind window)
-     , Index (Coord ind dims)
-     , Index (Coord ind window)
-     )
-  => (Grid ind window (Maybe a) -> b)
+   . (Dimensions dims, Enum (Coord ind dims))
+  => (Coord ind dims -> Grid ind window (Coord ind dims))
+  -> (Grid ind window a -> b)
   -> Grid ind dims a
   -> Grid ind dims b
-safeConvolute f = convolute (restrict . fromWindow . neighboring . toWindow)
-                            (f . getCompose)
+convolute selectWindow f g = gconvolute selectWindow f g
+
+safeConvolute
+  :: forall window dims ind a b
+   . (Dimensions dims, Index (Coord ind dims))
+  => (Coord ind dims -> Grid ind window (Coord ind dims))
+  -> (Grid ind window (Maybe a) -> b)
+  -> Grid ind dims a
+  -> Grid ind dims b
+safeConvolute selectWindow f = gconvolute (restrict . selectWindow)
+                                          (f . getCompose)
  where
-  toWindow :: Coord ind dims -> Coord ind window
-  toWindow = coerce
-  fromWindow
-    :: Grid ind window (Coord ind window) -> Grid ind window (Coord ind dims)
-  fromWindow = coerce
   restrict
     :: Grid ind window (Coord ind dims)
     -> Compose (Grid ind window) Maybe (Coord ind dims)
@@ -94,30 +89,57 @@ safeConvolute f = convolute (restrict . fromWindow . neighboring . toWindow)
     go b | inBounds b = Just b
          | otherwise  = Nothing
 
+safeAutoConvolute
+  :: forall window dims ind a b
+   . ( Dimensions dims
+     , Index (Coord ind dims)
+     , Index (Coord ind window)
+     , Neighboring (Coord ind window) (Grid ind window)
+     , Coercible (Coord ind dims) (Coord ind window)
+     )
+  => (Grid ind window (Maybe a) -> b)
+  -> Grid ind dims a
+  -> Grid ind dims b
+safeAutoConvolute = safeConvolute (window @window @dims)
 
+window
+  :: forall window dims ind
+   . ( Coercible (Coord ind dims) (Coord ind window)
+     , Index (Coord ind window)
+     , Neighboring (Coord ind window) (Grid ind window)
+     )
+  => Coord ind dims
+  -> Grid ind window (Coord ind dims)
+window = fromWindow . neighboring . toWindow
+ where
+  toWindow :: Coord ind dims -> Coord ind window
+  toWindow = coerce
+  fromWindow
+    :: Grid ind window (Coord ind window) -> Grid ind window (Coord ind dims)
+  fromWindow = coerce
 
--- data Orth a =
---   Orth
---     { up :: a
---     , right :: a
---     , down :: a
---     , left :: a
---     } deriving (Eq, Show, Functor, Traversable, Foldable)
+data Orth a =
+  Orth
+    { up :: a
+    , right :: a
+    , down :: a
+    , left :: a
+    } deriving (Eq, Show, Functor, Traversable, Foldable)
 
--- orthNeighbours
---   :: (KnownNat x, KnownNat y)
---   => (Tagged x :# Tagged y)
---   -> Compose Orth Maybe (Tagged x :# Tagged y)
--- orthNeighbours c = Compose
---   (   toMaybe
---   <$> traverse
---         (+)
---         Orth {up = 0 :# (-1), right = 1 :# 0, down = 0 :# 1, left = -1 :# 0}
---         c
---   )
---  where
---   toMaybe c@(x :# y) | not (inBounds x) || not (inBounds y) = Nothing
---                      | otherwise                            = Just c
+orthNeighbours :: (Index x, Index y) => (x :# y) -> Compose Orth Maybe (x :# y)
+orthNeighbours c = Compose
+  (   toMaybe
+  <$> traverse
+        (+)
+        Orth {up = 0 :# (-1), right = 1 :# 0, down = 0 :# 1, left = -1 :# 0}
+        c
+  )
+ where
+  toMaybe c@(x :# y) | not (inBounds x) || not (inBounds y) = Nothing
+                     | otherwise                            = Just c
+
+orthFromList [up', right', down', left'] =
+  Orth {up = up, right = right', down = down', left = left'}
 
 class Neighboring c g where
   neighbors :: g c
@@ -141,15 +163,6 @@ neighboring :: (Num c, Neighboring c (Grid ind dims)) => c -> Grid ind dims c
 neighboring c = (c +) <$> neighbors
 
 
--- class (Applicative f) => TraverseHappy c f where
---   traversal :: (forall n. KnownNat n => Finite n -> f (Finite n)) -> c -> f c
-
--- instance (TraverseHappy xs f, KnownNat n) => TraverseHappy (Finite n :# xs) f where
---   traversal f (x :# xs) = liftA2 (:#) (f x) (traversal f xs)
-
--- instance {-# OVERLAPPABLE #-} (KnownNat n, Applicative f) => TraverseHappy (Finite n) f where
---   traversal f x = f x
-
 -- instance {-# OVERLAPPABLE #-} (Integral x) => Collapsable x where
 --   collapse = pure . fromIntegral
 --   expand [] = error "not enough values to expand"
@@ -160,16 +173,3 @@ neighboring c = (c +) <$> neighbors
 --   collapse (x :# xs) = collapse x ++ collapse xs
 --   expand (x:xs) = fromIntegral x :# expand xs
 --   expand _ = error "not enough values to expand"
-
--- adjust :: (KnownNat n) => (Integer -> Integer) -> Finite n -> Maybe (Finite n)
--- adjust f = packFinite . f . fromIntegral
-
--- adjustCoord :: (Int -> Int) -> 
-
--- class Surround c where
---   surrounding :: Int -> c -> [ c ]
-
--- instance (Enum c) => Surround c where
---   surrounding n c = (fromEnum c `div` 2)
---     where
---       mid = fromEnum c

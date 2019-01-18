@@ -8,7 +8,6 @@ module Data.Grid.Internal.Clamp
   )
 where
 
-
 import           GHC.TypeNats
 import           Data.Proxy
 

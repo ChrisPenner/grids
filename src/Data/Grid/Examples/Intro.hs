@@ -7,6 +7,7 @@ import Data.Functor.Compose
 import Data.Coerce
 import Data.Foldable
 import Data.Functor.Rep
+import GHC.TypeNats
 
 simpleGrid :: Grid L '[5, 5] Int
 simpleGrid = generate id
@@ -53,13 +54,13 @@ gauss
      )
   => Grid (ind :: Ind) dims Double
   -> Grid ind dims Double
-gauss = safeConvolute gauss'
+gauss = safeAutoConvolute gauss'
  where
   gauss' :: Grid ind '[3, 3] (Maybe Double) -> Double
   gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
 
 seeNeighboring :: Grid C '[3, 3] a -> Grid C '[3, 3] (Grid C '[3, 3] (Maybe a))
-seeNeighboring = safeConvolute go
+seeNeighboring = safeAutoConvolute go
  where
   go :: Grid C '[3, 3] (Maybe a) -> Grid C '[3, 3] (Maybe a)
   go = coerce
@@ -70,4 +71,8 @@ coords = tabulate id
 simpleGauss :: Grid C '[3, 3] Double
 simpleGauss = gauss (fromIntegral <$> small)
 
--- simpleMath :: 
+myGauss :: Grid C '[9, 9] Double -> Grid C '[9, 9] Double
+myGauss = safeAutoConvolute @'[3, 3] gauss'
+  where
+  -- gauss' :: Grid ind '[3, 3] (Maybe Double) -> Double
+        gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
