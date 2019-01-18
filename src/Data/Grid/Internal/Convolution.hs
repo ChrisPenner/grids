@@ -14,102 +14,111 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 module Data.Grid.Internal.Convolution where
 
--- import Data.Grid.Internal.Index
--- import Data.Grid.Internal.Types
--- import Data.Grid.Internal.Coord
--- import Data.Grid.Internal.Nest
--- import Data.Grid.Internal.Tagged
--- import Data.Functor.Rep
--- import GHC.TypeNats
--- import Data.Kind
--- import Control.Applicative
--- import Data.Functor.Compose
--- import Data.Foldable
--- import Data.Coerce
+import Data.Grid.Internal.Index
+import Data.Grid.Internal.Types
+import Data.Grid.Internal.Coord
+import Data.Grid.Internal.Nest
+import Data.Grid.Internal.Tagged
+import Data.Functor.Rep
+import GHC.TypeNats
+import Data.Kind
+import Control.Applicative
+import Data.Functor.Compose
+import Data.Foldable
+import Data.Coerce
 
--- import Control.Comonad
--- import Control.Comonad.Representable.Store
--- import Data.Maybe
--- import Data.Proxy
+import Control.Comonad
+import Control.Comonad.Representable.Store
+import Data.Maybe
+import Data.Proxy
 
--- criticalError :: a
--- criticalError = error
---   "Something went wrong, please report this issue to the maintainer of grids"
+criticalError :: a
+criticalError = error
+  "Something went wrong, please report this issue to the maintainer of grids"
 
--- autoConvolute
---   :: forall window dims ind a b
---    . (Dimensions dims, Neighboring (Coord window ind) (Grid ind window))
---   => (Grid ind window a -> b)
---   -> Grid ind dims a
---   -> Grid ind dims b
--- autoConvolute = convolute (window @window @dims)
+autoConvolute
+  :: forall ind window dims a b
+   . ( Dimensions dims
+     , Neighboring (Coord window ind) (Grid window)
+     , Enum (Coord dims ind)
+     , Enum (Coord dims C)
+     , Num (Coord window ind)
+     )
+  => (Grid window a -> b)
+  -> Grid dims a
+  -> Grid dims b
+autoConvolute = convolute @ind window
 
--- gconvolute
---   :: forall dims ind f a b
---    . (Functor f, Dimensions dims, Enum (Coord dims ind))
---   => (Coord dims ind -> f (Coord dims ind))
---   -> (f a -> b)
---   -> Grid ind dims a
---   -> Grid ind dims b
--- gconvolute selectWindow f g =
---   let s = store (index g) criticalError
---       convoluted :: Store (Grid ind dims) b
---       convoluted     = extend (f . experiment selectWindow) s
---       (tabulator, _) = runStore convoluted
---   in  tabulate tabulator
+gconvolute
+  :: forall ind dims f a b
+   . (Functor f, Dimensions dims, Enum (Coord dims C), Enum (Coord dims ind))
+  => (Coord dims ind -> f (Coord dims ind))
+  -> (f a -> b)
+  -> Grid dims a
+  -> Grid dims b
+gconvolute selectWindow f g =
+  let
+    s = store (index g) criticalError
+    convoluted :: Store (Grid dims) b
+    convoluted =
+      extend (f . experiment (fmap roundTrip . selectWindow . coerceCoord)) s
+    (tabulator, _) = runStore convoluted
+  in
+    tabulate tabulator
+ where
+  roundTrip :: Coord dims ind -> Coord dims C
+  roundTrip = toEnum . fromEnum
 
--- convolute
---   :: forall window dims ind a b
---    . (Dimensions dims, Enum (Coord dims ind))
---   => (Coord dims ind -> Grid ind window (Coord dims ind))
---   -> (Grid ind window a -> b)
---   -> Grid ind dims a
---   -> Grid ind dims b
--- convolute selectWindow f g = gconvolute selectWindow f g
+convolute
+  :: forall ind window dims a b
+   . (Dimensions dims, Enum (Coord dims ind), Enum (Coord dims C))
+  => (Coord dims ind -> Grid window (Coord dims ind))
+  -> (Grid window a -> b)
+  -> Grid dims a
+  -> Grid dims b
+convolute selectWindow f g = gconvolute selectWindow f g
 
--- safeConvolute
---   :: forall window dims ind a b
---    . (Dimensions dims)
---   => (Coord dims ind -> Grid ind window (Coord dims ind))
---   -> (Grid ind window (Maybe a) -> b)
---   -> Grid ind dims a
---   -> Grid ind dims b
--- safeConvolute selectWindow f = gconvolute (restrict . selectWindow)
---                                           (f . getCompose)
---  where
---   restrict
---     :: Grid ind window (Coord dims ind)
---     -> Compose (Grid ind window) Maybe (Coord dims ind)
---   restrict = Compose . fmap go
---    where
---     go b | inBounds b = Just b
---          | otherwise  = Nothing
+safeConvolute
+  :: forall ind window dims a b
+   . (Dimensions dims, Enum (Coord dims ind), Enum (Coord dims C))
+  => (Coord dims ind -> Grid window (Coord dims ind))
+  -> (Grid window (Maybe a) -> b)
+  -> Grid dims a
+  -> Grid dims b
+safeConvolute selectWindow f = gconvolute (restrict . selectWindow)
+                                          (f . getCompose)
+ where
+  restrict
+    :: Grid window (Coord dims ind)
+    -> Compose (Grid window) Maybe (Coord dims ind)
+  restrict = Compose . fmap go
+   where
+    go b | coordInBounds b = Just b
+         | otherwise       = Nothing
 
--- safeAutoConvolute
---   :: forall window dims ind a b
---    . ( Dimensions dims
---      , Neighboring (Coord window ind) (Grid ind window)
---      , Coercible (Coord dims ind) (Coord window ind)
---      )
---   => (Grid ind window (Maybe a) -> b)
---   -> Grid ind dims a
---   -> Grid ind dims b
--- safeAutoConvolute = safeConvolute (window @window @dims)
+safeAutoConvolute
+  :: forall window dims a b
+   . ( Dimensions dims
+     , Neighboring (Coord window C) (Grid window)
+     , Num (Coord window C)
+     , Enum (Coord dims C)
+     )
+  => (Grid window (Maybe a) -> b)
+  -> Grid dims a
+  -> Grid dims b
+safeAutoConvolute = safeConvolute @C window
 
--- window
---   :: forall window dims ind
---    . ( Coercible (Coord dims ind) (Coord window ind)
---      , Neighboring (Coord window ind) (Grid ind window)
---      )
---   => Coord dims ind
---   -> Grid ind window (Coord dims ind)
--- window = fromWindow . neighboring . toWindow
---  where
---   toWindow :: Coord dims ind -> Coord window ind
---   toWindow = coerce
---   fromWindow
---     :: Grid ind window (Coord window ind) -> Grid ind window (Coord dims ind)
---   fromWindow = coerce
+window
+  :: forall window dims ind
+   . (Neighboring (Coord window ind) (Grid window), Num (Coord window ind))
+  => Coord dims ind
+  -> Grid window (Coord dims ind)
+window = fromWindow . neighboring . toWindow
+ where
+  toWindow :: Coord dims ind -> Coord window ind
+  toWindow = coerceCoordDims
+  fromWindow :: Grid window (Coord window ind) -> Grid window (Coord dims ind)
+  fromWindow = fmap coerceCoordDims
 
 -- data Orth a =
 --   Orth
@@ -134,26 +143,26 @@ module Data.Grid.Internal.Convolution where
 -- orthFromList [up', right', down', left'] =
 --   Orth {up = up, right = right', down = down', left = left'}
 
--- class Neighboring c g where
---   neighbors :: g c
+class Neighboring c g where
+  neighbors :: g c
 
--- instance {-# OVERLAPPING #-} Neighboring c (Grid ind '[n]) where
---   neighbors = fromList' . fmap toEnum . fmap (subtract (numVals `div` 2)) . take numVals $ [0 .. ]
---     where
---       numVals = inhabitants (Proxy @c)
+instance {-# OVERLAPPING #-} (KnownNat n, Enum (Index n ind)) => Neighboring (Coord '[n] ind) (Grid '[n]) where
+  neighbors = fromList' . fmap toEnum . fmap (subtract (numVals `div` 2)) . take numVals $ [0 .. ]
+    where
+      numVals = inhabitants @(Coord '[n] ind)
 
--- instance (Neighboring x (Grid ind '[n]), Neighboring y (Grid ind ns)) => Neighboring (Coord dims ind) (Grid ind (n:ns)) where
---   neighbors = joinGrid (addCoord <$> currentLevelNeighbors)
---     where
---       -- addCoord :: (Index n ind) -> Grid ind ns (Coord ns ind)
---       addCoord x = (x :#) <$> nestedNeighbors
---       nestedNeighbors :: Grid ind ns y
---       nestedNeighbors = neighbors
---       currentLevelNeighbors :: Grid ind '[n] x
---       currentLevelNeighbors = neighbors
+instance (KnownNat n, Enum (Index n ind), Neighboring (Coord ns ind) (Grid ns)) => Neighboring (Coord (n:ns) ind) (Grid (n:ns)) where
+  neighbors = joinGrid (addCoord <$> currentLevelNeighbors)
+    where
+      -- addCoord :: (Coord '[n] ind) -> Grid '[n] (Grid ns (Coord (n:ns) ind))
+      addCoord (Coord i) = (i :#) <$> nestedNeighbors
+      nestedNeighbors :: Grid ns (Coord ns ind)
+      nestedNeighbors = neighbors
+      currentLevelNeighbors :: Grid '[n] (Coord '[n] ind)
+      currentLevelNeighbors = neighbors
 
--- neighboring :: (Num c, Neighboring c (Grid ind dims)) => c -> Grid ind dims c
--- neighboring c = (c +) <$> neighbors
+neighboring :: (Num c, Neighboring c (Grid dims)) => c -> Grid dims c
+neighboring c = (c +) <$> neighbors
 
 
 -- -- instance {-# OVERLAPPABLE #-} (Integral x) => Collapsable x where

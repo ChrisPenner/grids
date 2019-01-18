@@ -1,4 +1,6 @@
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 module Data.Grid.Examples.Intro where
 
 import Data.Grid
@@ -16,67 +18,56 @@ coordGrid :: Grid '[5, 5] (Coord '[5, 5] 'C)
 coordGrid = tabulate id
 
 
--- modGrid :: Grid M '[5, 5] Int
--- modGrid = generate id
+avg :: Foldable f => f Int -> Int
+avg f | null f    = 0
+      | otherwise = sum f `div` length f
 
--- clampedGrid :: Grid C '[2, 2, 2, 2, 2, 2, 2] Int
--- clampedGrid = generate id
+mx :: Foldable f => f Int -> Int
+mx = maximum
 
--- avg :: Foldable f => f Int -> Int
--- avg f | null f    = 0
---       | otherwise = sum f `div` length f
+small :: Grid '[3, 3] Int
+small = generate id
 
--- mx :: Foldable f => f Int -> Int
--- mx = maximum
+med :: Grid '[3, 3, 3] Int
+med = generate id
 
--- small :: Grid C '[3, 3] Int
--- small = generate id
+big :: Grid '[5, 5, 5, 5] Int
+big = generate id
 
--- med :: Grid C '[3, 3, 3] Int
--- med = generate id
+threeByThree :: Grid '[3, 3] (Coord '[3, 3] ind)
+threeByThree = fromJust $ fromNestedLists
+  [ [(-1) :# (-1), (-1) :# 0, (-1) :# 1]
+  , [0 :# (-1), 0 :# 0, 0 :# 1]
+  , [1 :# (-1), 1 :# 0, 1 :# 1]
+  ]
 
--- big :: Grid C '[5, 5, 5, 5] Int
--- big = generate id
+threeByThree' :: (Coord '[3, 3] C) -> Grid '[3, 3] (Coord '[3, 3] C)
+threeByThree' = traverse (+) threeByThree
 
--- threeByThree :: (Num x, Num y) => Grid ind '[3, 3] (x :# y)
--- threeByThree = fromJust $ fromNestedLists
---   [ [(-1) :# (-1), (-1) :# 0, (-1) :# 1]
---   , [0 :# (-1), 0 :# 0, 0 :# 1]
---   , [1 :# (-1), 1 :# 0, 1 :# 1]
---   ]
+gauss
+  :: ( Dimensions dims
+     , Enum (Coord dims C)
+     , (Neighboring (Coord '[3, 3] C) (Grid '[3, 3]))
+     )
+  => Grid dims Double
+  -> Grid dims Double
+gauss = safeAutoConvolute gauss'
+ where
+  gauss' :: Grid '[3, 3] (Maybe Double) -> Double
+  gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
 
--- threeByThree'
---   :: (Num (x :# y), Num x, Num y) => (x :# y) -> Grid ind '[3, 3] (x :# y)
--- threeByThree' = traverse (+) threeByThree
+seeNeighboring :: Grid '[3, 3] a -> Grid '[3, 3] (Grid '[3, 3] (Maybe a))
+seeNeighboring = safeAutoConvolute go
+ where
+  go :: Grid '[3, 3] (Maybe a) -> Grid '[3, 3] (Maybe a)
+  go = coerce
 
--- gauss
---   :: ( Coercible (Coord ind '[3, 3]) (Coord ind dims)
---      , Dimensions dims
---      , Index (Coord ind dims)
---      , Index (Coord ind '[3, 3])
---      , Neighboring (Coord ind '[3, 3]) (Grid ind '[3, 3])
---      )
---   => Grid (ind :: Ind) dims Double
---   -> Grid ind dims Double
--- gauss = safeAutoConvolute gauss'
---  where
---   gauss' :: Grid ind '[3, 3] (Maybe Double) -> Double
---   gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
+coords :: Grid '[3, 3] (Coord '[3, 3] C)
+coords = tabulate id
 
--- seeNeighboring :: Grid C '[3, 3] a -> Grid C '[3, 3] (Grid C '[3, 3] (Maybe a))
--- seeNeighboring = safeAutoConvolute go
---  where
---   go :: Grid C '[3, 3] (Maybe a) -> Grid C '[3, 3] (Maybe a)
---   go = coerce
+simpleGauss :: Grid '[3, 3] Double
+simpleGauss = gauss (fromIntegral <$> small)
 
--- coords :: Grid C '[3, 3] (Clamp 3 :# Clamp 3)
--- coords = tabulate id
-
--- simpleGauss :: Grid C '[3, 3] Double
--- simpleGauss = gauss (fromIntegral <$> small)
-
--- myGauss :: Grid C '[9, 9] Double -> Grid C '[9, 9] Double
--- myGauss = safeAutoConvolute @'[3, 3] gauss'
---   where
---   -- gauss' :: Grid ind '[3, 3] (Maybe Double) -> Double
---         gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
+myGauss :: Grid '[9, 9] Double -> Grid '[9, 9] Double
+myGauss = safeAutoConvolute @'[3, 3] gauss'
+  where gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))

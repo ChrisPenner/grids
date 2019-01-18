@@ -24,6 +24,8 @@ import           GHC.TypeLits
 import           Data.Proxy
 import           Data.Finite
 import           Data.Kind
+import           Unsafe.Coerce
+import           Data.Coerce
 
 
 data Coord (dims :: [Nat]) (ind :: Ind) where
@@ -34,8 +36,6 @@ instance (KnownSymbol (ShowIndex ind)) => Show (Coord dims ind)
   where
     show (x :# y) = show x ++ " :# " ++ show y
     show (Coord x) = show x
-
--- deriving instance (KnownSymbol (ShowIndex ind)) => Show (Coord dims ind)
 
 infixr 9 :#
 
@@ -150,11 +150,17 @@ instance (KnownNat n, Num (Coord (n:ns) ind), Enum (Index n ind), Enum (Coord ns
 inhabitants :: forall x . (Bounded x, Enum x) => Int
 inhabitants = fromEnum (maxBound @x) + 1
 
-class SoftBounded c where
-  inBounds :: c -> Bool
+coerceCoord :: Coord ns i -> Coord ns j
+coerceCoord = coerce
 
-instance {-# OVERLAPPING #-} (SoftBounded (Index n ind)) => SoftBounded (Coord '[n] ind) where
-  inBounds (Coord c) = inBounds c
+coerceCoordDims :: Coord ns i -> Coord ms i
+coerceCoordDims c = unsafeCoerce c
 
-instance (SoftBounded (Index n ind), SoftBounded (Coord ns ind)) => SoftBounded (Coord (n:ns) ind) where
-  inBounds (x :# y) = inBounds x && inBounds y
+coordInBounds :: Coord ns i -> Bool
+coordInBounds (Coord i) = indexInBounds i
+coordInBounds (x :# y ) = indexInBounds x && coordInBounds y
+
+type family CoercibleDims (ns :: [Nat]) (ms :: [Nat]) :: Constraint where
+    CoercibleDims '[] '[] = ()
+    CoercibleDims '[m] '[n] = (KnownNat n)
+    CoercibleDims (n:ns) (m:ms) = (KnownNat m, CoercibleDims ns ms)
