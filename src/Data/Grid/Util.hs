@@ -38,7 +38,6 @@ autoConvolute
   :: forall window dims ind a b
    . ( Dimensions dims
      , Enum (Coord ind dims)
-     , Num (Coord ind dims)
      , Coercible (Coord ind window) (Coord ind dims)
      , Neighboring (Coord ind window) (Grid ind window)
      , (Num (Coord ind window))
@@ -46,19 +45,13 @@ autoConvolute
   => (Grid ind window a -> b)
   -> Grid ind dims a
   -> Grid ind dims b
-autoConvolute f g =
-  let s = store (index g) criticalError
-      convoluted :: Store (Grid ind dims) b
-      convoluted     = extend (f . experiment (c2 . ner . c1)) s
-      (tabulator, _) = runStore convoluted
-  in  tabulate tabulator
+autoConvolute = convolute (fromWindow . neighboring . toWindow)
  where
-  ner :: Coord ind window -> Grid ind window (Coord ind window)
-  ner = neighboring
-  c1 :: Coord ind dims -> Coord ind window
-  c1 = coerce
-  c2 :: Grid ind window (Coord ind window) -> Grid ind window (Coord ind dims)
-  c2 = coerce
+  toWindow :: Coord ind dims -> Coord ind window
+  toWindow = coerce
+  fromWindow
+    :: Grid ind window (Coord ind window) -> Grid ind window (Coord ind dims)
+  fromWindow = coerce
 
 convolute
   :: forall f ind dims a b

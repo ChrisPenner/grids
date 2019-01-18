@@ -28,6 +28,10 @@ instance (KnownNat n) => Num (Mod n) where
   fromInteger = newMod . fromIntegral
   negate (Mod n) = newMod (-n)
 
+instance (KnownNat n) => Bounded (Mod n) where
+  minBound = 0
+  maxBound = fromIntegral $ natVal (Proxy @n)
+
 instance KnownNat n => Semigroup (Mod n) where
   (<>) = (+)
 

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 70543ff84660746e1f45f17ff700acde586318c3c372fab343d7750f485ff113
+-- hash: 0ab7d6b524f3b0718aaf26a1c249759ffea1a4368b6f392f3f057d93e353fa9e
 
 name:           grids
 version:        0.2.0.0
@@ -44,6 +44,7 @@ library
       Paths_grids
   hs-source-dirs:
       src
+  ghc-options: -fwarn-redundant-constraints
   build-depends:
       adjunctions
     , base >=4.7 && <5

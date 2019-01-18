@@ -176,26 +176,19 @@ fromNestedLists' = fromJust . fromNestedLists
 -- > G.fromList [0, 1, 2, 3] :: Maybe (Grid [2, 3] Int)
 -- > Nothing
 fromList
-  :: forall a ind dims
-   . (KnownNat (GridSize dims), Dimensions dims)
-  => [a]
-  -> Maybe (Grid ind dims a)
+  :: forall a ind dims . (Dimensions dims) => [a] -> Maybe (Grid ind dims a)
 fromList xs =
   let v = V.fromList xs
   in  if V.length v == gridSize (Proxy @dims) then Just $ Grid v else Nothing
 
 -- | Partial variant of 'fromList' which errors on malformed input
-fromList'
-  :: forall a ind dims
-   . (KnownNat (GridSize dims), Dimensions dims)
-  => [a]
-  -> Grid ind dims a
+fromList' :: forall a ind dims . (Dimensions dims) => [a] -> Grid ind dims a
 fromList' = fromJust . fromList
 
 -- | Update elements of a grid
 (//)
   :: forall ind dims a
-   . (Dimensions dims, Enum (Coord ind dims))
+   . (Enum (Coord ind dims))
   => Grid ind dims a
   -> [(Coord ind dims, a)]
   -> Grid ind dims a

@@ -30,3 +30,4 @@ dependencies:
 
 library:
   source-dirs: src
+  ghc-options: -fwarn-redundant-constraints

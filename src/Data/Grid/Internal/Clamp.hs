@@ -8,6 +8,7 @@ module Data.Grid.Internal.Clamp
   )
 where
 
+
 import           GHC.TypeNats
 import           Data.Proxy
 
@@ -31,6 +32,10 @@ instance (KnownNat n) => Num (Clamp n) where
   signum = const (newClamp 1)
   fromInteger = newClamp . fromIntegral
   negate (Clamp n) = newClamp (-n)
+
+instance (KnownNat n) => Bounded (Clamp n) where
+  minBound = 0
+  maxBound = fromIntegral $ natVal (Proxy @n)
 
 instance KnownNat n => Semigroup (Clamp n) where
   (<>) = (+)

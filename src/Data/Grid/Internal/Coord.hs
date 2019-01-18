@@ -37,6 +37,10 @@ instance (Num x, Num y, Inhabited x, Inhabited y) => Num (x :# y) where
   fromInteger = toEnum . fromIntegral
   negate (x :# y) = negate x :# negate y
 
+instance (Bounded x, Bounded y) => Bounded (x :# y) where
+  minBound = minBound :# minBound
+  maxBound = maxBound :# maxBound
+
 instance (AsIndex (Mod n) n) => Enum (Mod n) where
   toEnum = toIndex (Proxy @n)
   fromEnum = fromIndex (Proxy @n)
@@ -55,19 +59,13 @@ instance (Num x, Num y, Inhabited x, Inhabited y) => Enum (x :# y) where
 class (Enum c) => Inhabited c where
   inhabitants :: Proxy c -> Int
 
-instance (KnownNat n) => Inhabited (Clamp n) where
-  inhabitants _ = fromIntegral $ natVal (Proxy @n)
-
-instance (KnownNat n) => Inhabited (Mod n) where
-  inhabitants _ = fromIntegral $ natVal (Proxy @n)
-
-instance (KnownNat n) => Inhabited (Tagged n) where
-  inhabitants _ = fromIntegral $ natVal (Proxy @n)
+instance (Bounded c, Enum c) => Inhabited c where
+  inhabitants _ = fromEnum (maxBound @c)
 
 instance (Inhabited x, Num x, Inhabited y, Num y) => Inhabited (x :# y) where
   inhabitants _ = inhabitants (Proxy @x) * inhabitants (Proxy @y)
 
-class AsIndex c (n :: Nat) where
+class (Num c, Enum c, Bounded c) => AsIndex c (n :: Nat) where
   toIndex :: Proxy n -> Int -> c
   fromIndex :: Proxy n -> c -> Int
 
@@ -87,13 +85,13 @@ instance (KnownNat n) => AsIndex (Clamp n) n where
   toIndex _ = newClamp
   fromIndex _ = unClamp
 
-instance (KnownNat n) => AsIndex Int n where
+instance AsIndex Int n where
   toIndex _ = id
   fromIndex _ = id
 
-instance {-# OVERLAPPABLE #-} (Integral i) => AsIndex i n where
-  toIndex _ = fromIntegral
-  fromIndex _ = fromIntegral
+-- instance {-# OVERLAPPABLE #-} (Integral i) => AsIndex i n where
+--   toIndex _ = fromIntegral
+--   fromIndex _ = fromIntegral
 
 -- class AsCoord c (dims :: [Nat]) where
 --   toCoord :: Proxy dims -> Int -> c
