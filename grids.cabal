@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4e2f06b58eea9cca47c29dffa36d49d91743765719647cf7c34be2ae29aa9ec8
+-- hash: de0952a53915089313f93c3e7efb110d9c099caab38d9904f608bd1908319914
 
 name:           grids
 version:        0.2.0.0
@@ -35,6 +35,7 @@ library
       Data.Grid.Internal.Coord
       Data.Grid.Internal.Dims
       Data.Grid.Internal.Identity
+      Data.Grid.Internal.Index
       Data.Grid.Internal.Mod
       Data.Grid.Internal.Nest
       Data.Grid.Internal.Pretty
