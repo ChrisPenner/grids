@@ -37,7 +37,7 @@ criticalError = error
   "Something went wrong, please report this issue to the maintainer of grids"
 
 autoConvolute
-  :: forall ind window dims a b
+  :: forall window ind dims a b
    . ( Dimensions dims
      , Neighboring (Coord window ind) (Grid window)
      , Enum (Coord dims ind)

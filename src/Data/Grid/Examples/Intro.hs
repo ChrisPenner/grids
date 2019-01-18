@@ -28,6 +28,10 @@ mx = maximum
 small :: Grid '[3, 3] Int
 small = generate id
 
+small' :: Grid '[5, 5] Int
+small' = generate id
+
+
 med :: Grid '[3, 3, 3] Int
 med = generate id
 
@@ -65,9 +69,19 @@ seeNeighboring = safeAutoConvolute go
 coords :: Grid '[3, 3] (Coord '[3, 3] C)
 coords = tabulate id
 
+doubleGrid :: Grid '[3, 3] Double
+doubleGrid = fromIntegral <$> small
+
 simpleGauss :: Grid '[3, 3] Double
-simpleGauss = gauss (fromIntegral <$> small)
+simpleGauss = gauss doubleGrid
 
 myGauss :: Grid '[9, 9] Double -> Grid '[9, 9] Double
 myGauss = safeAutoConvolute @'[3, 3] gauss'
   where gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
+
+pacmanGauss
+  :: (Dimensions dims, Enum (Coord dims M), Enum (Coord dims C))
+  => Grid dims Double
+  -> Grid dims Double
+pacmanGauss = autoConvolute @'[3, 3] @M gauss'
+  where gauss' g = (sum g) / fromIntegral (length g)

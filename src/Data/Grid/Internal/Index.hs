@@ -39,6 +39,11 @@ instance (KnownNat n) => Enum (Index n C) where
   toEnum = Index
   fromEnum (Index n) = fromIntegral (max minBound . min maxBound $ n)
 
+instance (KnownNat n) => Enum (Index n M) where
+  toEnum = Index
+  fromEnum (Index n) = fromIntegral (n `mod` modulus)
+    where modulus = fromIntegral $ natVal (Proxy @n)
+
 type family ShowIndex (i::Ind) :: Symbol where
   ShowIndex C = "C"
 
