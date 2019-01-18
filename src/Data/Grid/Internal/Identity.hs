@@ -10,7 +10,7 @@ import Data.Proxy
 idMatrix
   :: forall n ns ind x
    . (Num x, Dimensions (n : ns), Dimensions ns)
-  => Grid ind (n : ns) x
+  => Grid (n : ns) x
 idMatrix = Grid ns
  where
   ns = V.generate (gridSize (Proxy @(n : ns))) thing

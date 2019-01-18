@@ -35,6 +35,7 @@ module Data.Grid.Internal.Types
 where
 
 import           Data.Grid.Internal.Coord
+import           Data.Grid.Internal.Index
 import           Data.Grid.Internal.Pretty
 import           Data.Distributive
 import           Data.Functor.Rep
@@ -61,20 +62,20 @@ fromFinite = fromIntegral . getFinite
 -- > generate id :: Grid [2, 3] Int
 -- > (Grid [[0,1,2],
 -- >        [3,4,5]])
-newtype Grid ind (dims :: [Nat]) a =
+newtype Grid (dims :: [Nat]) a =
   Grid  {toVector :: V.Vector a}
   deriving (Eq, Functor, Foldable, Traversable)
 
-instance (PrettyList (NestedLists dims a), Dimensions dims, Show (NestedLists dims a)) => Show (Grid ind dims a) where
+instance (PrettyList (NestedLists dims a), Dimensions dims, Show (NestedLists dims a)) => Show (Grid dims a) where
   show g = "fromNestedLists \n" ++ (unlines . fmap ("  " ++ ) . lines $ prettyList (toNestedLists g))
 
-instance (Dimensions dims, Enum (Coord ind dims), Semigroup a) => Semigroup (Grid ind dims a) where
+instance (Dimensions dims, Semigroup a, Enum (Coord dims C)) => Semigroup (Grid dims a) where
   (<>) = liftA2 (<>)
 
-instance (Dimensions dims, Enum (Coord ind dims), Monoid a) => Monoid (Grid ind dims a) where
+instance (Dimensions dims, Monoid a, Enum (Coord dims C)) => Monoid (Grid dims a) where
   mempty = pure mempty
 
-instance (Dimensions dims, Enum (Coord ind dims)) => Applicative (Grid ind dims) where
+instance (Dimensions dims, Enum (Coord dims C)) => Applicative (Grid dims) where
   pure a = tabulate (const a)
   liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
@@ -105,11 +106,11 @@ instance (KnownNat (GridSize (x:y:xs)), KnownNat x, Dimensions (y:xs)) => Dimens
   nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (Proxy @(GridSize (y:xs))) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
 
-instance (Dimensions dims, Enum (Coord ind dims)) => Distributive (Grid ind dims) where
+instance (Dimensions dims, Enum (Coord dims C)) => Distributive (Grid dims) where
   distribute = distributeRep
 
-instance (Dimensions dims, Enum (Coord ind dims)) => Representable (Grid ind dims) where
-  type Rep (Grid ind dims) = Coord ind dims
+instance (Dimensions dims, Enum (Coord dims C)) => Representable (Grid dims) where
+  type Rep (Grid dims) = Coord dims C
   index (Grid v) ind = v V.! fromEnum  ind
   tabulate f = Grid $ V.generate (fromIntegral $ gridSize (Proxy @dims)) (f . toEnum  . fromIntegral)
 
@@ -123,7 +124,7 @@ type family NestedLists (dims :: [Nat]) a where
   NestedLists (_:xs) a = [NestedLists xs a]
 
 -- | Build a grid by selecting an element for each element
-generate :: forall ind dims a . Dimensions dims => (Int -> a) -> Grid ind dims a
+generate :: forall ind dims a . Dimensions dims => (Int -> a) -> Grid dims a
 generate f = Grid $ V.generate (gridSize (Proxy @dims)) f
 
 chunkVector :: forall n a . KnownNat n => Proxy n -> V.Vector a -> [V.Vector a]
@@ -140,10 +141,7 @@ chunkVector _ v
 -- > toNestedLists (G.generate id :: Grid [2, 3] Int)
 -- > [[0,1,2],[3,4,5]]
 toNestedLists
-  :: forall ind dims a
-   . (Dimensions dims)
-  => Grid ind dims a
-  -> NestedLists dims a
+  :: forall ind dims a . (Dimensions dims) => Grid dims a -> NestedLists dims a
 toNestedLists (Grid v) = nestLists (Proxy @dims) v
 
 -- | Turn a nested list structure into a Grid if the list is well formed. 
@@ -157,15 +155,12 @@ fromNestedLists
   :: forall ind dims a
    . Dimensions dims
   => NestedLists dims a
-  -> Maybe (Grid ind dims a)
+  -> Maybe (Grid dims a)
 fromNestedLists = fromList . unNestLists (Proxy @dims)
 
 -- | Partial variant of 'fromNestedLists' which errors on malformed input
 fromNestedLists'
-  :: forall ind dims a
-   . Dimensions dims
-  => NestedLists dims a
-  -> Grid ind dims a
+  :: forall ind dims a . Dimensions dims => NestedLists dims a -> Grid dims a
 fromNestedLists' = fromJust . fromNestedLists
 
 -- | Convert a list into a Grid or fail if not provided the correct number of
@@ -175,21 +170,20 @@ fromNestedLists' = fromJust . fromNestedLists
 -- > Just (Grid [[0,1,2],[3,4,5]])
 -- > G.fromList [0, 1, 2, 3] :: Maybe (Grid [2, 3] Int)
 -- > Nothing
-fromList
-  :: forall a ind dims . (Dimensions dims) => [a] -> Maybe (Grid ind dims a)
+fromList :: forall a ind dims . (Dimensions dims) => [a] -> Maybe (Grid dims a)
 fromList xs =
   let v = V.fromList xs
   in  if V.length v == gridSize (Proxy @dims) then Just $ Grid v else Nothing
 
 -- | Partial variant of 'fromList' which errors on malformed input
-fromList' :: forall a ind dims . (Dimensions dims) => [a] -> Grid ind dims a
+fromList' :: forall a ind dims . (Dimensions dims) => [a] -> Grid dims a
 fromList' = fromJust . fromList
 
 -- | Update elements of a grid
 (//)
   :: forall ind dims a
-   . (Enum (Coord ind dims))
-  => Grid ind dims a
-  -> [(Coord ind dims, a)]
-  -> Grid ind dims a
+   . (Enum (Coord dims ind))
+  => Grid dims a
+  -> [(Coord dims ind, a)]
+  -> Grid dims a
 (Grid v) // xs = Grid (v V.// fmap (first fromEnum) xs)

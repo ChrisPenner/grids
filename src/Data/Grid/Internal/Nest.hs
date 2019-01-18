@@ -8,7 +8,7 @@ import Data.Grid.Internal.Coord
 import Data.Singletons.Prelude
 import Data.Maybe
 
-joinGrid :: Grid ind dims (Grid ind ns a) -> Grid ind (dims ++ ns) a
+joinGrid :: Grid dims (Grid ns a) -> Grid (dims ++ ns) a
 joinGrid (Grid v) = Grid (v >>= toVector)
 
 splitGrid
@@ -18,6 +18,6 @@ splitGrid
      , Dimensions dims
      , NestedLists (dims ++ ns) a ~ NestedLists dims (NestedLists ns a)
      )
-  => Grid ind (dims ++ ns) a
-  -> Grid ind dims (Grid ind ns a)
+  => Grid (dims ++ ns) a
+  -> Grid dims (Grid ns a)
 splitGrid = fmap fromNestedLists' . fromNestedLists' . toNestedLists
