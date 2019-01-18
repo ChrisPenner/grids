@@ -38,21 +38,8 @@ med = generate id
 big :: Grid '[5, 5, 5, 5] Int
 big = generate id
 
-threeByThree :: Grid '[3, 3] (Coord '[3, 3] ind)
-threeByThree = fromJust $ fromNestedLists
-  [ [(-1) :# (-1), (-1) :# 0, (-1) :# 1]
-  , [0 :# (-1), 0 :# 0, 0 :# 1]
-  , [1 :# (-1), 1 :# 0, 1 :# 1]
-  ]
-
-threeByThree' :: (Coord '[3, 3] Clamp) -> Grid '[3, 3] (Coord '[3, 3] Clamp)
-threeByThree' = traverse (+) threeByThree
-
 gauss
-  :: ( Dimensions dims
-     , Enum (Coord dims Clamp)
-     , (Neighboring (Coord '[3, 3] Clamp) (Grid '[3, 3]))
-     )
+  :: (Indexable dims Clamp, (Neighboring (Coord '[3, 3] Clamp) (Grid '[3, 3])))
   => Grid dims Double
   -> Grid dims Double
 gauss = safeAutoConvolute gauss'
@@ -80,7 +67,7 @@ myGauss = safeAutoConvolute @'[3, 3] gauss'
   where gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
 
 pacmanGauss
-  :: (Dimensions dims, Enum (Coord dims Mod), Enum (Coord dims Clamp))
+  :: (Indexable dims Mod, Indexable dims Clamp)
   => Grid dims Double
   -> Grid dims Double
 pacmanGauss = autoConvolute @'[3, 3] @Mod gauss'

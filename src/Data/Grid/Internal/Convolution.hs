@@ -37,11 +37,10 @@ criticalError = error
 
 autoConvolute
   :: forall window ind dims a b
-   . ( Dimensions dims
+   . ( Indexable dims ind
+     , Indexable window ind
+     , Indexable dims Clamp
      , Neighboring (Coord window ind) (Grid window)
-     , Enum (Coord dims ind)
-     , Enum (Coord dims Clamp)
-     , Num (Coord window ind)
      )
   => (Grid window a -> b)
   -> Grid dims a
@@ -50,11 +49,7 @@ autoConvolute = convolute @ind window
 
 gconvolute
   :: forall ind dims f a b
-   . ( Functor f
-     , Dimensions dims
-     , Enum (Coord dims Clamp)
-     , Enum (Coord dims ind)
-     )
+   . (Functor f, Indexable dims ind, Indexable dims Clamp)
   => (Coord dims ind -> f (Coord dims ind))
   -> (f a -> b)
   -> Grid dims a
@@ -70,11 +65,11 @@ gconvolute selectWindow f g =
     tabulate tabulator
  where
   roundTrip :: Coord dims ind -> Coord dims Clamp
-  roundTrip = toEnum . fromEnum
+  roundTrip = coerceCoord
 
 convolute
   :: forall ind window dims a b
-   . (Dimensions dims, Enum (Coord dims ind), Enum (Coord dims Clamp))
+   . (Indexable dims ind, Indexable dims Clamp)
   => (Coord dims ind -> Grid window (Coord dims ind))
   -> (Grid window a -> b)
   -> Grid dims a
@@ -83,7 +78,7 @@ convolute selectWindow f g = gconvolute selectWindow f g
 
 safeConvolute
   :: forall ind window dims a b
-   . (Dimensions dims, Enum (Coord dims ind), Enum (Coord dims Clamp))
+   . (Indexable dims ind, Indexable dims Clamp)
   => (Coord dims ind -> Grid window (Coord dims ind))
   -> (Grid window (Maybe a) -> b)
   -> Grid dims a
@@ -101,10 +96,9 @@ safeConvolute selectWindow f = gconvolute (restrict . selectWindow)
 
 safeAutoConvolute
   :: forall window dims a b
-   . ( Dimensions dims
+   . ( Indexable dims Clamp
+     , Indexable window Clamp
      , Neighboring (Coord window Clamp) (Grid window)
-     , Num (Coord window Clamp)
-     , Enum (Coord dims Clamp)
      )
   => (Grid window (Maybe a) -> b)
   -> Grid dims a
@@ -154,7 +148,7 @@ instance {-# OVERLAPPING #-} (KnownNat n, Enum (Index n ind)) => Neighboring (Co
     where
       numVals = inhabitants @(Coord '[n] ind)
 
-instance (KnownNat n, Enum (Index n ind), Neighboring (Coord ns ind) (Grid ns)) => Neighboring (Coord (n:ns) ind) (Grid (n:ns)) where
+instance (KnownNat n, Bounded (Coord ns ind), Enum (Coord ns ind), Num (Coord ns ind), Enum (Index n ind), Neighboring (Coord ns ind) (Grid ns)) => Neighboring (Coord (n:ns) ind) (Grid (n:ns)) where
   neighbors = joinGrid (addCoord <$> currentLevelNeighbors)
     where
       -- addCoord :: (Coord '[n] ind) -> Grid '[n] (Grid ns (Coord (n:ns) ind))

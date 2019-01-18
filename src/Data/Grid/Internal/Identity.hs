@@ -13,5 +13,5 @@ idMatrix
   => Grid (n : ns) x
 idMatrix = Grid ns
  where
-  ns = V.generate (gridSize (Proxy @(n : ns))) thing
-  thing n = if n `mod` (gridSize (Proxy @ns) + 1) == 0 then 1 else 0
+  ns = V.generate (gridSize @(n : ns)) thing
+  thing n = if n `mod` (gridSize @ns + 1) == 0 then 1 else 0

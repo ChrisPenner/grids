@@ -17,6 +17,7 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Data.Grid.Internal.Types
   ( Grid(..)
@@ -24,6 +25,7 @@ module Data.Grid.Internal.Types
   , Dimensions(..)
   , Coord
   , NestedLists
+  , Indexable
   , generate
   , toNestedLists
   , fromNestedLists
@@ -43,17 +45,12 @@ import qualified Data.Vector                   as V
 import           Data.Proxy
 import           Data.Kind
 import           GHC.TypeNats                  as N
-import           Data.Finite
 import           Control.Applicative
 import           Data.List
 import           Data.Bifunctor
 import           Data.Maybe
 
-toFinite :: (KnownNat n) => Integral m => m -> Finite n
-toFinite = finite . fromIntegral
-
-fromFinite :: Num n => Finite m -> n
-fromFinite = fromIntegral . getFinite
+type Indexable dims ind = (Dimensions dims, Enum (Coord dims ind), Enum (Coord dims Clamp), Num (Coord dims ind))
 
 -- | An grid of arbitrary dimensions.
 --
@@ -69,13 +66,13 @@ newtype Grid (dims :: [Nat]) a =
 instance (PrettyList (NestedLists dims a), Dimensions dims, Show (NestedLists dims a)) => Show (Grid dims a) where
   show g = "fromNestedLists \n" ++ (unlines . fmap ("  " ++ ) . lines $ prettyList (toNestedLists g))
 
-instance (Dimensions dims, Semigroup a, Enum (Coord dims Clamp)) => Semigroup (Grid dims a) where
+instance (Indexable dims Clamp, Semigroup a) => Semigroup (Grid dims a) where
   (<>) = liftA2 (<>)
 
-instance (Dimensions dims, Monoid a, Enum (Coord dims Clamp)) => Monoid (Grid dims a) where
+instance (Indexable dims Clamp, Monoid a) => Monoid (Grid dims a) where
   mempty = pure mempty
 
-instance (Dimensions dims, Enum (Coord dims Clamp)) => Applicative (Grid dims) where
+instance (Indexable dims Clamp) => Applicative (Grid dims) where
   pure a = tabulate (const a)
   liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
@@ -89,8 +86,8 @@ type family GridSize (dims :: [Nat]) :: Nat where
 -- instances
 class (AllC KnownNat dims, KnownNat (GridSize dims)) => Dimensions (dims :: [Nat]) where
   gridSize
-    :: Proxy dims -> Int
-  gridSize _ = fromIntegral $ natVal (Proxy @(GridSize dims))
+    ::  Int
+  gridSize = fromIntegral $ natVal (Proxy @(GridSize dims))
   nestLists :: Proxy dims -> V.Vector a -> NestedLists dims a
   unNestLists :: Proxy dims -> NestedLists dims a -> [a]
 
@@ -106,13 +103,14 @@ instance (KnownNat (GridSize (x:y:xs)), KnownNat x, Dimensions (y:xs)) => Dimens
   nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (Proxy @(GridSize (y:xs))) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
 
-instance (Dimensions dims, Enum (Coord dims Clamp)) => Distributive (Grid dims) where
+instance (Indexable dims Clamp) => Distributive (Grid dims) where
   distribute = distributeRep
 
-instance (Dimensions dims, Enum (Coord dims Clamp)) => Representable (Grid dims) where
+instance (Indexable dims Clamp) => Representable (Grid dims) where
   type Rep (Grid dims) = Coord dims Clamp
-  index (Grid v) ind = v V.! fromEnum  ind
-  tabulate f = Grid $ V.generate (fromIntegral $ gridSize (Proxy @dims)) (f . toEnum  . fromIntegral)
+  index (Grid v) c@(Coord _) = v V.! fromEnum c
+  index (Grid v) c@(_ :# _) = v V.! fromEnum c
+  tabulate f = Grid $ V.generate (fromIntegral $ gridSize @dims) (f . toEnum  . fromIntegral)
 
 -- | Computes the level of nesting requried to represent a given grid
 -- dimensionality as a nested list
@@ -125,7 +123,7 @@ type family NestedLists (dims :: [Nat]) a where
 
 -- | Build a grid by selecting an element for each element
 generate :: forall ind dims a . Dimensions dims => (Int -> a) -> Grid dims a
-generate f = Grid $ V.generate (gridSize (Proxy @dims)) f
+generate f = Grid $ V.generate (gridSize @dims) f
 
 chunkVector :: forall n a . KnownNat n => Proxy n -> V.Vector a -> [V.Vector a]
 chunkVector _ v
@@ -173,7 +171,7 @@ fromNestedLists' = fromJust . fromNestedLists
 fromList :: forall a ind dims . (Dimensions dims) => [a] -> Maybe (Grid dims a)
 fromList xs =
   let v = V.fromList xs
-  in  if V.length v == gridSize (Proxy @dims) then Just $ Grid v else Nothing
+  in  if V.length v == gridSize @dims then Just $ Grid v else Nothing
 
 -- | Partial variant of 'fromList' which errors on malformed input
 fromList' :: forall a ind dims . (Dimensions dims) => [a] -> Grid dims a

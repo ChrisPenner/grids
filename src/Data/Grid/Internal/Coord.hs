@@ -26,8 +26,8 @@ import           Data.Coerce
 
 
 data Coord (dims :: [Nat]) (ind :: Ind) where
-  (:#) :: KnownNat n => Index n ind -> Coord ns ind -> Coord (n:ns) ind
-  Coord :: KnownNat n => Index n ind -> Coord '[n] ind
+  (:#) :: (Bounded (Coord ns ind), KnownNat n, Num (Coord ns ind), Enum (Coord ns ind)) => Index n ind -> Coord ns ind -> Coord (n:ns) ind
+  Coord :: (KnownNat n, Num (Coord '[n] ind), Enum (Coord '[n] ind)) => Index n ind -> Coord '[n] ind
 
 instance (KnownSymbol (ShowIndex ind)) => Show (Coord dims ind)
   where
@@ -36,14 +36,14 @@ instance (KnownSymbol (ShowIndex ind)) => Show (Coord dims ind)
 
 infixr 9 :#
 
-instance {-# OVERLAPPING #-} (KnownNat n) => Num (Coord '[n] ind) where
+instance {-# OVERLAPPING #-} (KnownNat n, Enum (Index n ind)) => Num (Coord '[n] ind) where
   (Coord x) + (Coord y) = Coord (x + y)
   a - b = a + (-b)
   (Coord x) * (Coord y) = Coord (x * y)
   abs (Coord x) = Coord (abs x)
   signum (Coord x) = Coord (signum x)
   fromInteger i = Coord (fromIntegral i)
-  negate (Coord x) = Coord (negate x)
+  negate (Coord x@(Index _)) = Coord (negate x)
 
 
 instance (Enum (Coord ns ind), Num (Coord ns ind), KnownNat n, Enum (Index n ind), Bounded (Coord ns ind)) => Num (Coord (n:ns) ind) where
@@ -55,11 +55,11 @@ instance (Enum (Coord ns ind), Num (Coord ns ind), KnownNat n, Enum (Index n ind
   fromInteger = toEnum . fromIntegral
   negate (x :# y) = negate x :# negate y
 
-instance {-# OVERLAPPING #-} (KnownNat n) => Bounded (Coord '[ n ] ind) where
+instance {-# OVERLAPPING #-} (KnownNat n, Enum (Index n ind)) => Bounded (Coord '[ n ] ind) where
   minBound = Coord minBound
   maxBound = Coord maxBound
 
-instance (KnownNat n, Bounded (Coord ns ind)) => Bounded (Coord (n:ns) ind) where
+instance (KnownNat n, Bounded (Coord ns ind), Enum (Index n ind), Enum (Coord ns ind), Num (Coord ns ind)) => Bounded (Coord (n:ns) ind) where
   minBound = minBound :# minBound
   maxBound = maxBound :# maxBound
 
@@ -67,7 +67,7 @@ instance {-# OVERLAPPING #-} (KnownNat n, Enum (Index n ind)) => Enum (Coord '[n
   toEnum i = Coord (toEnum i)
   fromEnum (Coord i) = fromEnum i
 
-instance (KnownNat n, Num (Coord (n:ns) ind), Enum (Index n ind), Enum (Coord ns ind), Bounded (Coord ns ind)) => Enum (Coord (n:ns) ind) where
+instance (KnownNat n, (Num (Coord ns ind)), Num (Coord (n:ns) ind), Enum (Index n ind), Enum (Coord ns ind), Bounded (Coord ns ind)) => Enum (Coord (n:ns) ind) where
   toEnum i | i < 0 = negate $ toEnum (abs i)
   toEnum i = toEnum (i `div` membersOfY) :# toEnum (i `mod` membersOfY)
     where
@@ -147,8 +147,8 @@ instance (KnownNat n, Num (Coord (n:ns) ind), Enum (Index n ind), Enum (Coord ns
 inhabitants :: forall x . (Bounded x, Enum x) => Int
 inhabitants = fromEnum (maxBound @x) + 1
 
-coerceCoord :: Coord ns i -> Coord ns j
-coerceCoord = coerce
+coerceCoord :: Coord ns (i :: Ind) -> Coord ns (j :: Ind)
+coerceCoord = unsafeCoerce
 
 coerceCoordDims :: Coord ns i -> Coord ms i
 coerceCoordDims c = unsafeCoerce c
