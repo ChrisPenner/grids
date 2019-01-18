@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8b04d2c0dba885d5c5191785e8b4f50be2b65fa869c904b94fe482d32cbb7385
+-- hash: 3bf6e3cfcf675eb6303c4c6543e1f73e7aed6f4c83a0e20b207a5d5a5ed19f2e
 
 name:           grids
 version:        0.2.0.0
@@ -42,7 +42,7 @@ library
       Paths_grids
   hs-source-dirs:
       src
-  default-extensions: KindSignatures PolyKinds TypeApplications ScopedTypeVariables TypeOperators TypeFamilies
+  default-extensions: KindSignatures PolyKinds TypeApplications ScopedTypeVariables TypeOperators TypeFamilies FlexibleInstances FlexibleContexts MultiParamTypeClasses DataKinds
   ghc-options: -fwarn-redundant-constraints
   build-depends:
       adjunctions

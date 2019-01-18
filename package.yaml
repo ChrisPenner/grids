@@ -17,6 +17,10 @@ default-extensions:
   - ScopedTypeVariables
   - TypeOperators
   - TypeFamilies
+  - FlexibleInstances
+  - FlexibleContexts
+  - MultiParamTypeClasses
+  - DataKinds
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package

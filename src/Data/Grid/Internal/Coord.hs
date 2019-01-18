@@ -58,7 +58,7 @@ instance {-# OVERLAPPING #-} (KnownNat n, Enum (Index n ind)) => Bounded (Coord 
   minBound = Coord minBound
   maxBound = Coord maxBound
 
-instance (KnownNat n, Bounded (Coord ns ind), Enum (Index n ind), Enum (Coord ns ind), Num (Coord ns ind)) => Bounded (Coord (n:ns) ind) where
+instance (KnownNat n, Bounded (Coord ns ind), Enum (Index n ind)) => Bounded (Coord (n:ns) ind) where
   minBound = minBound :# minBound
   maxBound = maxBound :# maxBound
 

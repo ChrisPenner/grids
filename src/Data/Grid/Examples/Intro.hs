@@ -38,10 +38,7 @@ med = generate id
 big :: Grid '[5, 5, 5, 5] Int
 big = generate id
 
-gauss
-  :: (Indexable dims Clamp, (Neighboring (Coord '[3, 3] Clamp) (Grid '[3, 3])))
-  => Grid dims Double
-  -> Grid dims Double
+gauss :: (Indexable dims Clamp) => Grid dims Double -> Grid dims Double
 gauss = safeAutoConvolute gauss'
  where
   gauss' :: Grid '[3, 3] (Maybe Double) -> Double
