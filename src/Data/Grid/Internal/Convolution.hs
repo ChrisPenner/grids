@@ -11,7 +11,7 @@
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE PolyKinds #-}
-module Data.Grid.Util where
+module Data.Grid.Internal.Convolution where
 
 import Data.Grid.Internal.Types
 import Data.Grid.Internal.Coord
@@ -67,75 +67,57 @@ convolute selectWindow f g =
       (tabulator, _) = runStore convoluted
   in  tabulate tabulator
 
-threeByThree :: (Num x, Num y) => Grid ind '[3, 3] (x :# y)
-threeByThree = fromJust $ fromNestedLists
-  [ [(-1) :# (-1), (-1) :# 0, (-1) :# 1]
-  , [0 :# (-1), 0 :# 0, 0 :# 1]
-  , [1 :# (-1), 1 :# 0, 1 :# 1]
-  ]
-
-threeByThree'
-  :: (Num (x :# y), Num x, Num y) => (x :# y) -> Grid ind '[3, 3] (x :# y)
-threeByThree' = traverse (+) threeByThree
-
-data Orth a =
-  Orth
-    { up :: a
-    , right :: a
-    , down :: a
-    , left :: a
-    } deriving (Eq, Show, Functor, Traversable, Foldable)
-
-orthNeighbours
-  :: (KnownNat x, KnownNat y)
-  => (Tagged x :# Tagged y)
-  -> Compose Orth Maybe (Tagged x :# Tagged y)
-orthNeighbours c = Compose
-  (   toMaybe
-  <$> traverse
-        (+)
-        Orth {up = 0 :# (-1), right = 1 :# 0, down = 0 :# 1, left = -1 :# 0}
-        c
-  )
+safeConvolute
+  :: forall window dims ind a b
+   . ( Dimensions dims
+     , Coercible (Coord ind window) (Coord ind dims)
+     , Neighboring (Coord ind window) (Grid ind window)
+     , Index (Coord ind dims)
+     , Index (Coord ind window)
+     )
+  => (Grid ind window (Maybe a) -> b)
+  -> Grid ind dims a
+  -> Grid ind dims b
+safeConvolute f = convolute (restrict . fromWindow . neighboring . toWindow)
+                            (f . getCompose)
  where
-  toMaybe c@(x :# y) | not (inBounds x) || not (inBounds y) = Nothing
-                     | otherwise                            = Just c
-
-avg :: Foldable f => f Int -> Int
-avg f | null f    = 0
-      | otherwise = sum f `div` length f
-
-mx :: Foldable f => f Int -> Int
-mx = maximum
-
-small :: Grid C '[3, 3] Int
-small = generate id
-
-med :: Grid C '[3, 3, 3] Int
-med = generate id
-
-big :: Grid C '[5, 5, 5, 5] Int
-big = generate id
+  toWindow :: Coord ind dims -> Coord ind window
+  toWindow = coerce
+  fromWindow
+    :: Grid ind window (Coord ind window) -> Grid ind window (Coord ind dims)
+  fromWindow = coerce
+  restrict
+    :: Grid ind window (Coord ind dims)
+    -> Compose (Grid ind window) Maybe (Coord ind dims)
+  restrict = Compose . fmap go
+   where
+    go b | inBounds b = Just b
+         | otherwise  = Nothing
 
 
-type family IsSubgrid (child :: [Nat]) (parent :: [Nat]):: Constraint where
-  IsSubgrid '[] '[] = ()
-  IsSubgrid '[child] '[parent] = child <= parent
-  IsSubgrid (child:cs) (parent:ps) = (child <= parent, IsSubgrid cs ps)
 
-class (Applicative t) => TraverseCoord t c d where
-  sequenceC :: c -> t d
+-- data Orth a =
+--   Orth
+--     { up :: a
+--     , right :: a
+--     , down :: a
+--     , left :: a
+--     } deriving (Eq, Show, Functor, Traversable, Foldable)
 
-instance (TraverseCoord t y d') => TraverseCoord t (t x :# y) (x :# d') where
-  sequenceC (tx :# y) = (:#) <$> tx <*> sequenceC y
-
-type family HeadC xs where
-  HeadC (x :# _) = x
-  HeadC x = x
-
-class Collapsable c where
-  collapse :: c -> [Int]
-  expand :: [Int] -> c
+-- orthNeighbours
+--   :: (KnownNat x, KnownNat y)
+--   => (Tagged x :# Tagged y)
+--   -> Compose Orth Maybe (Tagged x :# Tagged y)
+-- orthNeighbours c = Compose
+--   (   toMaybe
+--   <$> traverse
+--         (+)
+--         Orth {up = 0 :# (-1), right = 1 :# 0, down = 0 :# 1, left = -1 :# 0}
+--         c
+--   )
+--  where
+--   toMaybe c@(x :# y) | not (inBounds x) || not (inBounds y) = Nothing
+--                      | otherwise                            = Just c
 
 class Neighboring c g where
   neighbors :: g c

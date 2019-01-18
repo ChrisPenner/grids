@@ -12,9 +12,4 @@ newtype Tagged (n :: Nat) = Tagged {unTagged :: Int}
 
 instance (KnownNat n) => Bounded (Tagged n) where
   minBound = 0
-  maxBound = fromIntegral $ natVal (Proxy @n)
-
-inBounds :: forall n . KnownNat n => Tagged n -> Bool
-inBounds (Tagged n) | n < 0 = False
-inBounds (Tagged n) | n >= fromIntegral (natVal (Proxy @n)) = False
-inBounds _                  = True
+  maxBound = fromIntegral (natVal (Proxy @n)) - 1

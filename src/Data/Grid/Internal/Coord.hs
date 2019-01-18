@@ -6,6 +6,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Data.Grid.Internal.Coord where
 
@@ -20,6 +21,8 @@ import           Data.Finite
 import           Data.Kind
 
 data Ind = O | M | C | I | L | T
+
+type Index c = (Enum c, Bounded c, Num c, Ord c, SoftBounded c)
 
 -- | Used for constructing arbitrary depth coordinate lists 
 -- e.g. @('Finite' 2 ':#' 'Finite' 3)@
@@ -53,10 +56,10 @@ instance (Num x, Num y, Enum x, Enum y, Bounded y) => Enum (x :# y) where
   toEnum i | i < 0 = negate $ toEnum (abs i)
   toEnum i = toEnum (i `div` membersOfY) :# toEnum (i `mod` membersOfY)
     where
-      membersOfY = fromEnum (maxBound @y)
-  fromEnum (x :# y) = (fromEnum x * fromEnum (maxBound @y)) + fromEnum y
+      membersOfY = fromEnum (inhabitants (Proxy @y))
+  fromEnum (x :# y) = (fromEnum x * fromEnum (inhabitants (Proxy @y))) + fromEnum y
 
-class (Num c, Enum c, Bounded c, KnownNat n) => AsIndex c (n :: Nat) where
+class (Num c, Enum c, Bounded c,  Ord c, KnownNat n) => AsIndex c (n :: Nat) where
   toIndex :: Proxy n -> Int -> c
   fromIndex :: Proxy n -> c -> Int
 
@@ -153,3 +156,13 @@ type instance IndexOf T n = Tagged n
 
 inhabitants :: forall x. (Bounded x, Enum x) => Proxy x -> Int
 inhabitants _ = fromEnum (maxBound @x) + 1
+
+class SoftBounded c where
+  inBounds :: c -> Bool
+
+instance {-# OVERLAPPABLE #-} (Bounded c, Ord c) => SoftBounded c where
+  inBounds c = c >= minBound && c <= maxBound
+
+instance {-# OVERLAPPING #-} (SoftBounded x, SoftBounded y) => SoftBounded (x :# y) where
+  inBounds (x :# y) = inBounds x && inBounds y
+

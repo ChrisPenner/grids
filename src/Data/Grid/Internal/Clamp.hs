@@ -35,7 +35,7 @@ instance (KnownNat n) => Num (Clamp n) where
 
 instance (KnownNat n) => Bounded (Clamp n) where
   minBound = 0
-  maxBound = fromIntegral $ natVal (Proxy @n)
+  maxBound = (fromIntegral (natVal (Proxy @n))) - 1
 
 instance KnownNat n => Semigroup (Clamp n) where
   (<>) = (+)

@@ -30,7 +30,7 @@ instance (KnownNat n) => Num (Mod n) where
 
 instance (KnownNat n) => Bounded (Mod n) where
   minBound = 0
-  maxBound = fromIntegral $ natVal (Proxy @n)
+  maxBound = fromIntegral (natVal (Proxy @n)) - 1
 
 instance KnownNat n => Semigroup (Mod n) where
   (<>) = (+)
