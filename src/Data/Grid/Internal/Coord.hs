@@ -28,7 +28,7 @@ data x :# y = x :# y
 
 infixr 9 :#
 
-instance (Num x, Num y, Inhabited x, Inhabited y) => Num (x :# y) where
+instance (Num x, Num y, Enum x, Enum y, Bounded y) => Num (x :# y) where
   (x :# y) + (x' :# y') = (x + x') :# (y + y')
   a - b = a + (-b)
   (x :# y) * (x' :# y') = (x * x') :# (y * y')
@@ -49,23 +49,14 @@ instance (AsIndex (Clamp n) n) => Enum (Clamp n) where
   toEnum = toIndex (Proxy @n)
   fromEnum = fromIndex (Proxy @n)
 
-instance (Num x, Num y, Inhabited x, Inhabited y) => Enum (x :# y) where
+instance (Num x, Num y, Enum x, Enum y, Bounded y) => Enum (x :# y) where
   toEnum i | i < 0 = negate $ toEnum (abs i)
   toEnum i = toEnum (i `div` membersOfY) :# toEnum (i `mod` membersOfY)
     where
-      membersOfY = inhabitants (Proxy @y)
-  fromEnum (x :# y) = (fromEnum x * inhabitants (Proxy @y)) + fromEnum y
+      membersOfY = fromEnum (maxBound @y)
+  fromEnum (x :# y) = (fromEnum x * fromEnum (maxBound @y)) + fromEnum y
 
-class (Enum c) => Inhabited c where
-  inhabitants :: Proxy c -> Int
-
-instance (Bounded c, Enum c) => Inhabited c where
-  inhabitants _ = fromEnum (maxBound @c)
-
-instance (Inhabited x, Num x, Inhabited y, Num y) => Inhabited (x :# y) where
-  inhabitants _ = inhabitants (Proxy @x) * inhabitants (Proxy @y)
-
-class (Num c, Enum c, Bounded c) => AsIndex c (n :: Nat) where
+class (Num c, Enum c, Bounded c, KnownNat n) => AsIndex c (n :: Nat) where
   toIndex :: Proxy n -> Int -> c
   fromIndex :: Proxy n -> c -> Int
 
@@ -85,7 +76,7 @@ instance (KnownNat n) => AsIndex (Clamp n) n where
   toIndex _ = newClamp
   fromIndex _ = unClamp
 
-instance AsIndex Int n where
+instance (KnownNat n) => AsIndex Int n where
   toIndex _ = id
   fromIndex _ = id
 
@@ -159,3 +150,6 @@ type instance IndexOf C n = Clamp n
 type instance IndexOf L n = Int
 type instance IndexOf I n = Int
 type instance IndexOf T n = Tagged n
+
+inhabitants :: forall x. (Bounded x, Enum x) => Proxy x -> Int
+inhabitants _ = fromEnum (maxBound @x) + 1

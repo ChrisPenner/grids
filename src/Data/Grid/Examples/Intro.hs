@@ -10,3 +10,5 @@ modGrid = generate id
 
 clampedGrid :: Grid C '[2, 2, 2, 2, 2, 2, 2] Int
 clampedGrid = generate id
+
+-- simpleMath :: 

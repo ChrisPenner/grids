@@ -140,7 +140,7 @@ class Collapsable c where
 class Neighboring c g where
   neighbors :: g c
 
-instance {-# OVERLAPPING #-} (Inhabited c, KnownNat n) => Neighboring c (Grid ind '[n]) where
+instance {-# OVERLAPPING #-} (AsIndex c n) => Neighboring c (Grid ind '[n]) where
   neighbors = fromList' . fmap toEnum . fmap (subtract (numVals `div` 2)) . take numVals $ [0 .. ]
     where
       numVals = inhabitants (Proxy @c)
