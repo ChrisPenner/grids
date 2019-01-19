@@ -101,7 +101,7 @@ type family NestedLists (dims :: [Nat]) a where
   NestedLists (_:xs) a = [NestedLists xs a]
 
 -- | Build a grid by selecting an element for each element
-generate :: forall ind dims a . Dimensions dims => (Int -> a) -> Grid dims a
+generate :: forall dims ind a . Dimensions dims => (Int -> a) -> Grid dims a
 generate f = Grid $ V.generate (inhabitants @dims) f
 
 chunkVector :: forall a . Int -> V.Vector a -> [V.Vector a]
