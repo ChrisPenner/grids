@@ -33,7 +33,7 @@ import           Data.Bifunctor
 import           Data.Maybe
 import Data.Singletons.Prelude
 
-type Indexable dims ind = (Dimensions dims, Enum (Coord dims ind), Enum (Coord dims Clamp), Num (Coord dims ind), SingI dims)
+type Indexable dims ind = (Dimensions dims, Enum (Coord dims ind), SingI dims)
 
 -- | An grid of arbitrary dimensions.
 --
@@ -67,10 +67,7 @@ type family GridSize (dims :: [Nat]) :: Nat where
 
 -- | Represents valid dimensionalities. All non empty lists of Nats have
 -- instances
-class (AllC KnownNat dims, KnownNat (GridSize dims)) => Dimensions (dims :: [Nat]) where
-  gridSize
-    ::  Int
-  gridSize = fromIntegral $ natVal (Proxy @(GridSize dims))
+class (SingI dims) => Dimensions (dims :: [Nat]) where
   nestLists :: Proxy dims -> V.Vector a -> NestedLists dims a
   unNestLists :: Proxy dims -> NestedLists dims a -> [a]
 
@@ -82,8 +79,8 @@ instance (KnownNat x) => Dimensions '[x] where
   nestLists _ = V.toList
   unNestLists _ xs = xs
 
-instance (KnownNat (GridSize (x:y:xs)), KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
-  nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (Proxy @(GridSize (y:xs))) v
+instance (KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
+  nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (inhabitants @(y:xs)) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
 
 instance (Indexable dims Clamp) => Distributive (Grid dims) where
@@ -92,7 +89,7 @@ instance (Indexable dims Clamp) => Distributive (Grid dims) where
 instance (Indexable dims Clamp) => Representable (Grid dims) where
   type Rep (Grid dims) = Coord dims Clamp
   index (Grid v) c = v V.! fromEnum c
-  tabulate f = Grid $ V.generate (fromIntegral $ gridSize @dims) (f . toEnum  . fromIntegral)
+  tabulate f = Grid $ V.generate (fromIntegral $ inhabitants @dims) (f . toEnum  . fromIntegral)
 
 -- | Computes the level of nesting requried to represent a given grid
 -- dimensionality as a nested list
@@ -105,15 +102,15 @@ type family NestedLists (dims :: [Nat]) a where
 
 -- | Build a grid by selecting an element for each element
 generate :: forall ind dims a . Dimensions dims => (Int -> a) -> Grid dims a
-generate f = Grid $ V.generate (gridSize @dims) f
+generate f = Grid $ V.generate (inhabitants @dims) f
 
-chunkVector :: forall n a . KnownNat n => Proxy n -> V.Vector a -> [V.Vector a]
-chunkVector _ v
+chunkVector :: forall a . Int -> V.Vector a -> [V.Vector a]
+chunkVector n v
   | V.null v
   = []
   | otherwise
-  = let (before, after) = V.splitAt (fromIntegral $ natVal (Proxy @n)) v
-    in  before : chunkVector (Proxy @n) after
+  = let (before, after) = V.splitAt n v
+    in  before : chunkVector n after
 
 -- | Turn a grid into a nested list structure. List nesting increases for each
 -- dimension
@@ -153,7 +150,7 @@ fromNestedLists' = fromJust . fromNestedLists
 fromList :: forall a ind dims . (Dimensions dims) => [a] -> Maybe (Grid dims a)
 fromList xs =
   let v = V.fromList xs
-  in  if V.length v == gridSize @dims then Just $ Grid v else Nothing
+  in  if V.length v == inhabitants @dims then Just $ Grid v else Nothing
 
 -- | Partial variant of 'fromList' which errors on malformed input
 fromList' :: forall a ind dims . (Dimensions dims) => [a] -> Grid dims a
