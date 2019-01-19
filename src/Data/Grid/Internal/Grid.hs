@@ -20,7 +20,6 @@ module Data.Grid.Internal.Grid
 where
 
 import           Data.Grid.Internal.Coord
-import           Data.Grid.Internal.Index
 import           Data.Grid.Internal.Pretty
 import           Data.Distributive
 import           Data.Functor.Rep
@@ -32,8 +31,9 @@ import           Control.Applicative
 import           Data.List
 import           Data.Bifunctor
 import           Data.Maybe
+import Data.Singletons.Prelude
 
-type Indexable dims ind = (Dimensions dims, Enum (Coord dims ind), Enum (Coord dims Clamp), Num (Coord dims ind))
+type Indexable dims ind = (Dimensions dims, Enum (Coord dims ind), Enum (Coord dims Clamp), Num (Coord dims ind), SingI dims)
 
 -- | An grid of arbitrary dimensions.
 --
@@ -91,8 +91,7 @@ instance (Indexable dims Clamp) => Distributive (Grid dims) where
 
 instance (Indexable dims Clamp) => Representable (Grid dims) where
   type Rep (Grid dims) = Coord dims Clamp
-  index (Grid v) c@(Coord _) = v V.! fromEnum c
-  index (Grid v) c@(_ :# _) = v V.! fromEnum c
+  index (Grid v) c = v V.! fromEnum c
   tabulate f = Grid $ V.generate (fromIntegral $ gridSize @dims) (f . toEnum  . fromIntegral)
 
 -- | Computes the level of nesting requried to represent a given grid

@@ -14,7 +14,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 module Data.Grid.Internal.Convolution where
 
-import Data.Grid.Internal.Index
 import Data.Grid.Internal.Grid
 import Data.Grid.Internal.Coord
 import Data.Grid.Internal.Nest
@@ -142,16 +141,16 @@ window = fromWindow . neighboring . toWindow
 class Neighboring c g where
   neighbors :: g c
 
-instance {-# OVERLAPPING #-} (KnownNat n, Enum (Index n ind)) => Neighboring (Coord '[n] ind) (Grid '[n]) where
-  neighbors = fromList' . fmap toEnum . fmap (subtract (numVals `div` 2)) . take numVals $ [0 .. ]
+instance {-# OVERLAPPING #-} (KnownNat n) => Neighboring (Coord '[n] ind) (Grid '[n]) where
+  neighbors = fromList' . fmap (Coord . pure . subtract (numVals `div` 2)) . take numVals $ [0 .. ]
     where
-      numVals = inhabitants @(Coord '[n] ind)
+      numVals = inhabitants @'[n]
 
-instance (KnownNat n, Enum (Index n ind), Neighboring (Coord ns ind) (Grid ns)) => Neighboring (Coord (n:ns) ind) (Grid (n:ns)) where
+instance (KnownNat n, Neighboring (Coord ns ind) (Grid ns)) => Neighboring (Coord (n:ns) ind) (Grid (n:ns)) where
   neighbors = joinGrid (addCoord <$> currentLevelNeighbors)
     where
-      -- addCoord :: (Coord '[n] ind) -> Grid '[n] (Grid ns (Coord (n:ns) ind))
-      addCoord (Coord i) = (i :#) <$> nestedNeighbors
+      addCoord :: Coord '[n] ind -> Grid ns (Coord (n : ns) ind)
+      addCoord c = (appendC c) <$> nestedNeighbors
       nestedNeighbors :: Grid ns (Coord ns ind)
       nestedNeighbors = neighbors
       currentLevelNeighbors :: Grid '[n] (Coord '[n] ind)

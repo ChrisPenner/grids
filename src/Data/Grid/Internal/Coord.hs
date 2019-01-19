@@ -15,8 +15,6 @@
 
 module Data.Grid.Internal.Coord where
 
-import           Data.Grid.Internal.Index
-
 import           GHC.TypeNats                      hiding ( Mod )
 import           GHC.TypeLits hiding (natVal, Mod)
 import           Data.Proxy
@@ -26,6 +24,8 @@ import           Data.Coerce
 import           Data.List
 import           Data.Singletons.Prelude
 
+data Ind = Mod | Clamp
+
 data Coord (dims :: [Nat]) (ind :: Ind) = Coord {unCoord :: [Int]}
 
 instance Show (Coord dims ind)
@@ -34,6 +34,9 @@ instance Show (Coord dims ind)
 
 unconsC :: Coord (n : ns) ind -> (Int, Coord ns ind)
 unconsC (Coord (n : ns)) = (n, Coord ns)
+
+appendC :: Coord ns ind -> Coord ms ind -> Coord (ns ++ ms) ind
+appendC (Coord ns) (Coord ms) = Coord (ns ++ ms)
 
 pattern (:#) :: Int -> (Coord (ns) ind) -> Coord (n:ns) ind
 pattern n :# ns <- (unconsC -> (n, ns)) where
@@ -62,6 +65,10 @@ instance (KnownNat n, Bounded (Coord ns ind)) => Bounded (Coord (n:ns) ind) wher
   minBound = 0 :# minBound
   maxBound = highestIndex @n :# maxBound
 
+-- instance Enum (Coord '[] ind) where
+--   toEnum i = Coord []
+--   fromEnum (Coord []) = 0
+
 instance {-# OVERLAPPING #-} (KnownNat n) => Enum (Coord '[n] Mod) where
   toEnum i = Coord [i]
   fromEnum (Coord [i]) = i `mod` highestIndex @n
@@ -70,15 +77,15 @@ instance {-# OVERLAPPING #-} (KnownNat n) => Enum (Coord '[n] Clamp) where
   toEnum i = Coord [i]
   fromEnum (Coord [i]) = clamp (0, highestIndex @n) i
 
-instance (Enum (Coord ns ind), Bounded (Coord ns ind)) => Enum (Coord (n:ns) ind) where
+instance (SingI ns, Enum (Coord ns ind), Bounded (Coord ns ind)) => Enum (Coord (n:ns) ind) where
   toEnum i | i < 0 = negate $ toEnum (abs i)
   toEnum i = toEnum (i `div` membersOfY) :# toEnum (i `mod` membersOfY)
     where
-      membersOfY = fromEnum (inhabitants @(Coord ns ind))
-  fromEnum (x :# y) = (fromEnum x * fromEnum (inhabitants @(Coord ns ind))) + fromEnum y
+      membersOfY = fromEnum (inhabitants @ns)
+  fromEnum (x :# y) = (fromEnum x * fromEnum (inhabitants @ns)) + fromEnum y
 
-inhabitants :: forall x . (Bounded x, Enum x) => Int
-inhabitants = fromEnum (maxBound @x) + 1
+inhabitants :: forall (dims :: [Nat]) . SingI dims => Int
+inhabitants = product . fmap fromIntegral $ demote @dims
 
 coerceCoord :: Coord ns (i :: Ind) -> Coord ns (j :: Ind)
 coerceCoord = unsafeCoerce
