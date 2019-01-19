@@ -15,7 +15,7 @@
 module Data.Grid.Internal.Convolution where
 
 import Data.Grid.Internal.Index
-import Data.Grid.Internal.Types
+import Data.Grid.Internal.Grid
 import Data.Grid.Internal.Coord
 import Data.Grid.Internal.Nest
 import Data.Functor.Rep

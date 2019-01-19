@@ -3,7 +3,7 @@
 {-# LANGUAGE PolyKinds #-}
 module Data.Grid.Internal.Identity where
 
-import Data.Grid.Internal.Types
+import Data.Grid.Internal.Grid
 import Data.Vector as V
 import Data.Proxy
 

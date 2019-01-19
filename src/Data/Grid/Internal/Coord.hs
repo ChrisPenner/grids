@@ -18,7 +18,6 @@ import           Data.Grid.Internal.Index
 import           GHC.TypeNats                      hiding ( Mod )
 import           GHC.TypeLits
 import           Data.Proxy
-import           Data.Finite
 import           Data.Kind
 import           Unsafe.Coerce
 import           Data.Coerce

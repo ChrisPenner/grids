@@ -21,6 +21,10 @@ default-extensions:
   - FlexibleContexts
   - MultiParamTypeClasses
   - DataKinds
+  - GeneralizedNewtypeDeriving
+  - DeriveTraversable
+  - DeriveFunctor
+  - ConstraintKinds
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -36,7 +40,6 @@ dependencies:
 - distributive
 - vector
 - adjunctions
-- finite-typelits
 - comonad
 - singletons
 

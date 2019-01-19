@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Data.Grid.Internal.Nest where
 
-import Data.Grid.Internal.Types
+import Data.Grid.Internal.Grid
 import Data.Grid.Internal.Coord
 import Data.Singletons.Prelude
 import Data.Maybe
