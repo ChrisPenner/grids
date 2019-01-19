@@ -168,3 +168,4 @@ fromList' = fromJust . fromList
   -> [(Coord dims ind, a)]
   -> Grid dims a
 (Grid v) // xs = Grid (v V.// fmap (first fromEnum) xs)
+
