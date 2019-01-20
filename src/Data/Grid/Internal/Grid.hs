@@ -15,6 +15,7 @@ module Data.Grid.Internal.Grid
   , fromNestedLists'
   , fromList
   , fromList'
+  , toList
   , (//)
   )
 where
@@ -27,11 +28,12 @@ import qualified Data.Vector                   as V
 import           Data.Proxy
 import           Data.Kind
 import           GHC.TypeNats                  as N
+                                                   hiding ( Mod )
 import           Control.Applicative
 import           Data.List
 import           Data.Bifunctor
 import           Data.Maybe
-import Data.Singletons.Prelude
+import           Data.Singletons.Prelude
 
 type Indexable dims ind = (Dimensions dims, Enum (Coord dims ind), SingI dims)
 
@@ -67,7 +69,7 @@ type family GridSize (dims :: [Nat]) :: Nat where
 
 -- | Represents valid dimensionalities. All non empty lists of Nats have
 -- instances
-class (SingI dims, AllC KnownNat dims) => Dimensions (dims :: [Nat]) where
+class (SingI dims, AllC KnownNat dims, Enum (Coord dims Mod), Enum (Coord dims Clamp), Bounded (Coord dims Mod), Bounded (Coord dims Clamp)) => Dimensions (dims :: [Nat]) where
   nestLists :: Proxy dims -> V.Vector a -> NestedLists dims a
   unNestLists :: Proxy dims -> NestedLists dims a -> [a]
 
@@ -79,7 +81,7 @@ instance (KnownNat x) => Dimensions '[x] where
   nestLists _ = V.toList
   unNestLists _ xs = xs
 
-instance (KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
+instance (SingI xs, Bounded (Coord xs Mod), Bounded (Coord xs Clamp), KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
   nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (inhabitants @(y:xs)) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
 
@@ -109,8 +111,7 @@ chunkVector n v
   | V.null v
   = []
   | otherwise
-  = let (before, after) = V.splitAt n v
-    in  before : chunkVector n after
+  = let (before, after) = V.splitAt n v in before : chunkVector n after
 
 -- | Turn a grid into a nested list structure. List nesting increases for each
 -- dimension
@@ -156,6 +157,9 @@ fromList xs =
 fromList' :: forall a ind dims . (Dimensions dims) => [a] -> Grid dims a
 fromList' = fromJust . fromList
 
+toList :: Grid dims a -> [a]
+toList (Grid v) = V.toList v
+
 -- | Update elements of a grid
 (//)
   :: forall ind dims a
@@ -164,4 +168,3 @@ fromList' = fromJust . fromList
   -> [(Coord dims ind, a)]
   -> Grid dims a
 (Grid v) // xs = Grid (v V.// fmap (first fromEnum) xs)
-

@@ -74,7 +74,7 @@ instance (KnownNat n, Bounded (Coord ns ind)) => Bounded (Coord (n:ns) ind) wher
 
 instance  (KnownNat n) => Enum (Coord '[n] Mod) where
   toEnum i = Coord [i]
-  fromEnum (Coord [i]) = i `mod` highestIndex @n
+  fromEnum (Coord [i]) = i `mod` (highestIndex @n + 1)
 
 instance  (KnownNat n) => Enum (Coord '[n] Clamp) where
   toEnum i = Coord [i]
@@ -90,7 +90,7 @@ instance  (KnownNat x, KnownNat y, SingI rest, Bounded (Coord rest Mod), Enum (C
   toEnum i | i < 0 = negate $ toEnum (abs i)
   toEnum i | i > fromEnum (maxBound @(Coord (x:y:rest) Mod)) = error "Index out of bounds"
   toEnum i = (i `div` (inhabitants @(y:rest))) :# toEnum (i `mod` inhabitants @(y:rest))
-  fromEnum (x :# ys) = (clamp (0, highestIndex @x) x * inhabitants @(y:rest)) + fromEnum ys
+  fromEnum (x :# ys) = ((x `mod` (highestIndex @x + 1))  * inhabitants @(y:rest)) + fromEnum ys
 
 inhabitants :: forall (dims :: [Nat]) . SingI dims => Int
 inhabitants = product . fmap fromIntegral $ demote @dims

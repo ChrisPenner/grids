@@ -46,3 +46,17 @@ dependencies:
 library:
   source-dirs: src
   ghc-options: -fwarn-redundant-constraints
+
+
+tests:
+  specs:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -main-is Spec
+    dependencies:
+    - grids
+    - hspec

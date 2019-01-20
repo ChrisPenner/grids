@@ -63,6 +63,6 @@ myGauss :: Grid '[9, 9] Double -> Grid '[9, 9] Double
 myGauss = safeAutoConvolute @'[3, 3] gauss'
   where gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
 
-pacmanGauss :: (Indexable dims Clamp) => Grid dims Double -> Grid dims Double
+pacmanGauss :: (Dimensions dims) => Grid dims Double -> Grid dims Double
 pacmanGauss = autoConvolute @'[3, 3] @Mod gauss'
   where gauss' g = sum g / fromIntegral (length g)
