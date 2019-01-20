@@ -1,16 +1,5 @@
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 module Data.Grid.Internal.Convolution where
 
@@ -73,7 +62,7 @@ convolute
   -> (Grid window a -> b)
   -> Grid dims a
   -> Grid dims b
-convolute selectWindow f g = gconvolute selectWindow f g
+convolute = gconvolute
 
 safeConvolute
   :: forall ind window dims a b
@@ -159,15 +148,3 @@ instance (KnownNat n, Neighboring (Coord ns ind) (Grid ns)) => Neighboring (Coor
 
 neighboring :: (Num c, Neighboring c (Grid dims)) => c -> Grid dims c
 neighboring c = (c +) <$> neighbors
-
-
--- -- instance {-# OVERLAPPABLE #-} (Integral x) => Collapsable x where
--- --   collapse = pure . fromIntegral
--- --   expand [] = error "not enough values to expand"
--- --   expand [x] = fromIntegral x
--- --   expand _ = error "too many values to expand"
-
--- -- instance (Num x, Collapsable x, Collapsable xs) => Collapsable (x :# xs) where
--- --   collapse (x :# xs) = collapse x ++ collapse xs
--- --   expand (x:xs) = fromIntegral x :# expand xs
--- --   expand _ = error "not enough values to expand"
