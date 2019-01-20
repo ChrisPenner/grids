@@ -15,6 +15,7 @@
 
 module Data.Grid.Internal.Coord where
 
+import           GHC.Exts
 import           GHC.TypeNats                      hiding ( Mod )
 import           GHC.TypeLits hiding (natVal, Mod)
 import           Data.Proxy
@@ -26,7 +27,12 @@ import           Data.Singletons.Prelude
 
 data Ind = Mod | Clamp
 
-data Coord (dims :: [Nat]) (ind :: Ind) = Coord {unCoord :: [Int]}
+newtype Coord (dims :: [Nat]) (ind :: Ind) = Coord {unCoord :: [Int]}
+
+instance IsList (Coord dims ind) where
+  type Item (Coord dims ind) = Int
+  fromList = coerce
+  toList = coerce
 
 instance Show (Coord dims ind)
   where
