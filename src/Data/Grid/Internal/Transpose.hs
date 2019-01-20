@@ -17,6 +17,7 @@ import           Data.Singletons.Prelude.Maybe
 import           Data.Functor.Rep
 import           Data.Vector                   as V
 import           Data.Kind
+import           Data.Maybe
 
 type family Transposed (key :: [Nat]) (from :: [Nat]) :: [Nat] where
   Transposed '[] _ = '[]
@@ -40,21 +41,19 @@ transpose
      )
   => Grid from a
   -> Grid (Transposed key from) a
-transpose (Grid v) = Grid transposedValues
+transpose (Grid v) = transposedValues
  where
-  transpMap :: Grid from (Coord (Transposed key from) Clamp)
-  transpMap = tabulate (transposeCoord @key)
-  transposedPositions :: Vector Int
-  transposedPositions = fromEnum <$> (toVector transpMap)
-  transposedValues :: Vector a
-  transposedValues =
-    V.generate (V.length v) (\n -> v V.! (transposedPositions V.! n))
+  transpMap :: V.Vector (Coord (Transposed key from) Clamp)
+  transpMap = V.generate (V.length v) (transposeCoord @key . toEnum @(Coord from Clamp))
+  transposedValues :: Grid (Transposed key from) a
+  transposedValues = tabulate (\c -> v V.! fromJust (c `V.elemIndex` transpMap))
+    -- V.generate (V.length v) (\n -> v V.! (transpMap V.! n))
 
 transposeCoord
-  :: forall (key :: [Nat]) from ys ind
-   . SingI key
+  :: forall (key :: [Nat]) from ind
+   . (SingI key, ValidTransposition key from)
   => Coord from ind
-  -> Coord ys ind
+  -> Coord (Transposed key from) ind
 transposeCoord (Coord cs) = Coord newCoord
  where
   key :: [Int]

@@ -28,6 +28,7 @@ import           Data.Singletons.Prelude
 data Ind = Mod | Clamp
 
 newtype Coord (dims :: [Nat]) (ind :: Ind) = Coord {unCoord :: [Int]}
+  deriving (Eq)
 
 instance IsList (Coord dims ind) where
   type Item (Coord dims ind) = Int
@@ -98,7 +99,7 @@ coerceCoord :: Coord ns (i :: Ind) -> Coord ns (j :: Ind)
 coerceCoord = unsafeCoerce
 
 coerceCoordDims :: Coord ns i -> Coord ms i
-coerceCoordDims c = unsafeCoerce c
+coerceCoordDims = unsafeCoerce
 
 coordInBounds :: forall ns i. (SingI ns) => Coord ns i -> Bool
 coordInBounds (Coord cs) = all inRange $ zip cs maxIndexes
