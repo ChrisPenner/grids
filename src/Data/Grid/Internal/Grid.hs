@@ -67,7 +67,7 @@ type family GridSize (dims :: [Nat]) :: Nat where
 
 -- | Represents valid dimensionalities. All non empty lists of Nats have
 -- instances
-class (SingI dims) => Dimensions (dims :: [Nat]) where
+class (SingI dims, AllC KnownNat dims) => Dimensions (dims :: [Nat]) where
   nestLists :: Proxy dims -> V.Vector a -> NestedLists dims a
   unNestLists :: Proxy dims -> NestedLists dims a -> [a]
 

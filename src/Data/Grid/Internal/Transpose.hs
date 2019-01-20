@@ -18,45 +18,77 @@ import           Data.Functor.Rep
 import           Data.Vector                   as V
 import           Data.Kind
 import           Data.Maybe
+import Data.List 
 
-type family Transposed (key :: [Nat]) (from :: [Nat]) :: [Nat] where
-  Transposed '[] _ = '[]
-  Transposed (x:xs) from = (from !! x) : Transposed xs from
+type family Permuted (key :: [Nat]) (from :: [Nat]) :: [Nat] where
+  Permuted '[] _ = '[]
+  Permuted (x:xs) from = (from !! x) : Permuted xs from
 
-type ValidTransposition key from =
+type ValidPermutation key from =
   (Sort key == EnumFromTo 0 (Length from TL.- 1)) ?!
-    (Text "Malformed transposition hint: " :<>: ShowType key
-                :$$: Text "When transposing matrix of size: " :<>: ShowType from
+    (Text "Malformed permutation hint: " :<>: ShowType key
+                :$$: Text "When permuting matrix of size: " :<>: ShowType from
                 :$$: Text "Key must be a permutation of "  :<>: ShowType (EnumFromTo 0 (Length from TL.- 1))
-                :$$: Text "e.g. the identity transpose for 2x2 is @[0, 1]"
-                :$$: Text "e.g. standard transposition for 2x2 is @[1, 0]"
+                :$$: Text "e.g. the identity permutation for 2x2 is @[0, 1]"
+                :$$: Text "e.g. matrix transpose for 2x2 is @[1, 0]"
   )
 
-transpose
-  :: forall (key :: [Nat]) from a
-   . ( SingI key
-     , ValidTransposition key from
+--transposeSlow
+--  :: forall (key :: [Nat]) from a
+--   . ( SingI key
+--     , ValidPermutation key from
+--     , Indexable from Clamp
+--     , Indexable (Permuted key from) Clamp
+--     )
+--  => Grid from a
+--  -> Grid (Permuted key from) a
+--transposeSlow (Grid v) = Grid done
+-- where
+--  len = V.length v
+--  transpMap :: V.Vector Int
+--  transpMap = V.generate len (fromEnum . transposeCoord @key . toEnum @(Coord from Clamp))
+--  zipped :: V.Vector (Int, Int)
+--  zipped = indexed transpMap
+--  sorted = sortOn snd (toList zipped)
+--  collapsed = fmap fst sorted
+--  collected = fmap (v V.!) collapsed
+--  done = V.fromList collected
+--  -- This is a really slow way to do this
+--  -- transposedValues :: V.Vector a
+--  -- transposedValues = V.generate len (\i -> transpMap V.! i)
+
+-- This is more confusing but maybe faster??
+permute
+  :: forall (key :: [Nat]) from a invertedKey
+   . ( SingI invertedKey
+     , invertedKey ~ InvertKey (EnumFromTo 0 (Length from TL.- 1)) key
+     , ValidPermutation key from
      , Indexable from Clamp
-     , Indexable (Transposed key from) Clamp
+     , Indexable (Permuted key from) Clamp
      )
   => Grid from a
-  -> Grid (Transposed key from) a
-transpose (Grid v) = transposedValues
+  -> Grid (Permuted key from) a
+permute (Grid v) = result
  where
-  transpMap :: V.Vector (Coord (Transposed key from) Clamp)
-  transpMap = V.generate (V.length v) (transposeCoord @key . toEnum @(Coord from Clamp))
-  transposedValues :: Grid (Transposed key from) a
-  transposedValues = tabulate (\c -> v V.! fromJust (c `V.elemIndex` transpMap))
-    -- V.generate (V.length v) (\n -> v V.! (transpMap V.! n))
+  len = V.length v
+  result :: Grid (Permuted key from) a
+  result = tabulate ((v V.!) . fromEnum @(Coord from Clamp) . permuteCoord @invertedKey @from)
 
-transposeCoord
-  :: forall (key :: [Nat]) from ind
-   . (SingI key, ValidTransposition key from)
+permuteCoord
+  :: forall (key :: [Nat]) to from ind
+   . (SingI key)
   => Coord from ind
-  -> Coord (Transposed key from) ind
-transposeCoord (Coord cs) = Coord newCoord
+  -> Coord to ind
+permuteCoord (Coord cs) = Coord newCoord
  where
   key :: [Int]
   key = fromIntegral <$> demote @key
   newCoord :: [Int]
   newCoord = (cs !!) <$> key
+
+transpose :: (Dimensions [x, y]) => Grid [x, y] a -> Grid [y, x] a
+transpose = permute @[1, 0]
+
+type family InvertKey ref key :: [Nat] where
+  InvertKey '[] xs = '[]
+  InvertKey (n:ns) xs = FromJust (ElemIndex n xs) : InvertKey ns xs
