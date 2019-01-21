@@ -3,21 +3,21 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 module Data.Grid.Internal.Convolution where
 
-import Data.Grid.Internal.Grid
-import Data.Grid.Internal.Coord
-import Data.Grid.Internal.Nest
-import Data.Functor.Rep
-import GHC.TypeNats
-import Data.Kind
-import Control.Applicative
-import Data.Functor.Compose
-import Data.Foldable
-import Data.Coerce
+import           Data.Grid.Internal.Grid
+import           Data.Grid.Internal.Coord
+import           Data.Grid.Internal.Nest
+import           Data.Functor.Rep
+import           GHC.TypeNats
+import           Data.Kind
+import           Control.Applicative
+import           Data.Functor.Compose
+import           Data.Foldable
+import           Data.Coerce
 
-import Control.Comonad
-import Control.Comonad.Representable.Store
-import Data.Maybe
-import Data.Proxy
+import           Control.Comonad
+import           Control.Comonad.Representable.Store
+import           Data.Maybe
+import           Data.Proxy
 
 criticalError :: a
 criticalError = error
@@ -25,10 +25,10 @@ criticalError = error
 
 autoConvolute
   :: forall window ind dims a b
-   . ( Indexable window ind
-     , Indexable dims Clamp
+   . ( Indexable dims
      , Enum (Coord dims ind)
      , Neighboring (Coord window ind) (Grid window)
+     , Enum (Coord window ind)
      )
   => (Grid window a -> b)
   -> Grid dims a
@@ -37,7 +37,7 @@ autoConvolute = convolute @ind (window @window @dims @ind)
 
 gconvolute
   :: forall ind dims f a b
-   . (Functor f, Indexable dims Clamp, Enum (Coord dims ind))
+   . (Functor f, Indexable dims, Enum (Coord dims ind))
   => (Coord dims ind -> f (Coord dims ind))
   -> (f a -> b)
   -> Grid dims a
@@ -57,7 +57,7 @@ gconvolute selectWindow f g =
 
 convolute
   :: forall ind window dims a b
-   . (Indexable dims Clamp, Enum (Coord dims ind))
+   . (Indexable dims, Enum (Coord dims ind))
   => (Coord dims ind -> Grid window (Coord dims ind))
   -> (Grid window a -> b)
   -> Grid dims a
@@ -66,7 +66,7 @@ convolute = gconvolute
 
 safeConvolute
   :: forall ind window dims a b
-   . (Indexable dims Clamp, Enum (Coord dims ind))
+   . (Indexable dims, Enum (Coord dims ind))
   => (Coord dims ind -> Grid window (Coord dims ind))
   -> (Grid window (Maybe a) -> b)
   -> Grid dims a
@@ -84,8 +84,8 @@ safeConvolute selectWindow f = gconvolute (restrict . selectWindow)
 
 safeAutoConvolute
   :: forall window dims a b
-   . ( Indexable dims Clamp
-     , Indexable window Clamp
+   . ( Indexable dims
+     , Indexable window
      , Neighboring (Coord window Clamp) (Grid window)
      )
   => (Grid window (Maybe a) -> b)

@@ -38,8 +38,8 @@ permute
    . ( SingI invertedKey
      , invertedKey ~ InvertKey (EnumFromTo 0 (Length from TL.- 1)) key
      , ValidPermutation key from
-     , Indexable from Clamp
-     , Indexable (Permuted key from) Clamp
+     , Indexable from 
+     , Indexable (Permuted key from) 
      )
   => Grid from a
   -> Grid (Permuted key from) a
@@ -62,7 +62,7 @@ permuteCoord (Coord cs) = Coord newCoord
   newCoord :: [Int]
   newCoord = (cs !!) <$> key
 
-transpose :: (Dimensions '[x, y]) => Grid '[x, y] a -> Grid '[y, x] a
+transpose :: (KnownNat x, KnownNat y) => Grid '[x, y] a -> Grid '[y, x] a
 transpose = permute @'[1, 0]
 
 type family InvertKey ref key :: [Nat] where
