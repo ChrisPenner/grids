@@ -1,7 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ViewPatterns #-}
 module Data.Grid.Lens where
 
 import Data.Grid
@@ -18,10 +17,10 @@ lens sa sbt afb s = sbt s <$> afb (sa s)
 -- | Focus an element of a grid
 cell
   :: forall ind dims a
-   . (Indexable dims)
-  => Coord dims ind
+   . (Dimensions dims)
+  => Coord dims
   -> Lens' (Grid dims a) a
-cell (coerceCoord -> c) = lens get set
+cell c = lens get set
  where
   get          = flip R.index c
   vectorOffset = fromEnum c

@@ -4,7 +4,6 @@
 
 module Data.Grid.Internal.Grid
   ( Grid(..)
-  , Indexable
   , Dimensions(..)
   , Coord
   , NestedLists
@@ -36,11 +35,6 @@ import           Data.Maybe
 import           Data.Singletons.Prelude
 import           Control.DeepSeq
 
--- | A constraint synonym for some commonly required constraints
--- You never NEED to use Indexable, but sometimes it can clean up a type
--- signature for you.
-type Indexable dims = (Enum (Coord dims Mod), Enum (Coord dims Clamp), SingI dims)
-
 -- | An grid of arbitrary dimensions.
 --
 -- e.g. a @Grid [2, 3] Int@ might look like:
@@ -55,21 +49,21 @@ newtype Grid (dims :: [Nat]) a =
 instance (PrettyList (NestedLists dims a), Dimensions dims, Show (NestedLists dims a)) => Show (Grid dims a) where
   show g = "fromNestedLists \n" ++ (unlines . fmap ("  " ++ ) . lines $ prettyList (toNestedLists g))
 
-instance (Indexable dims, Semigroup a) => Semigroup (Grid dims a) where
+instance (Dimensions dims, Semigroup a) => Semigroup (Grid dims a) where
   (<>) = liftA2 (<>)
 
-instance (Indexable dims, Monoid a) => Monoid (Grid dims a) where
+instance (Dimensions dims, Monoid a) => Monoid (Grid dims a) where
   mempty = pure mempty
 
-instance (Indexable dims) => Applicative (Grid dims) where
+instance (Dimensions dims) => Applicative (Grid dims) where
   pure a = tabulate (const a)
   liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
-instance (Indexable dims) => Distributive (Grid dims) where
+instance (Dimensions dims) => Distributive (Grid dims) where
   distribute = distributeRep
 
-instance (Indexable dims) => Representable (Grid dims) where
-  type Rep (Grid dims) = Coord dims Clamp
+instance (Dimensions dims) => Representable (Grid dims) where
+  type Rep (Grid dims) = Coord dims
   index (Grid v) c = v V.! fromEnum c
   tabulate f = Grid $ V.generate (fromIntegral $ inhabitants @dims) (f . toEnum  . fromIntegral)
 
@@ -127,8 +121,8 @@ toList (Grid v) = V.toList v
 -- | Update elements of a grid
 (//)
   :: forall ind dims a
-   . (Enum (Coord dims ind))
+   . (Enum (Coord dims ))
   => Grid dims a
-  -> [(Coord dims ind, a)]
+  -> [(Coord dims , a)]
   -> Grid dims a
 (Grid v) // xs = Grid (v V.// fmap (first fromEnum) xs)

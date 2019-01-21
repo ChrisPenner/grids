@@ -32,7 +32,7 @@ chunkVector n v
 
 -- | Represents valid dimensionalities. All non empty lists of Nats have
 -- an instance
-class (AllC KnownNat dims, SingI dims) => Dimensions  (dims :: [Nat]) where
+class (AllC KnownNat dims, SingI dims, Enum (Coord dims), Bounded (Coord dims)) => Dimensions  (dims :: [Nat]) where
   nestLists :: Proxy dims -> V.Vector a -> NestedLists dims a
   unNestLists :: Proxy dims -> NestedLists dims a -> [a]
 
@@ -40,6 +40,6 @@ instance (KnownNat x) => Dimensions '[x] where
   nestLists _ = V.toList
   unNestLists _ xs = xs
 
-instance (KnownNat x, Dimensions (y:xs)) => Dimensions (x:y:xs) where
+instance (KnownNat x, Bounded (Coord xs), SingI xs, Dimensions (y:xs)) => Dimensions (x:y:xs) where
   nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (inhabitants @(y:xs)) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)

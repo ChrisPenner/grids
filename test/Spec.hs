@@ -35,7 +35,7 @@ main = hspec $ do
       Just g `shouldBe` expected
 
     it "tabulate should put coords in the right places" $ do
-      let g        = tabulate id :: Grid '[2, 2] (Coord '[2, 2] Clamp)
+      let g        = tabulate id :: Grid '[2, 2] (Coord '[2, 2])
           expected = fromNestedLists
             [[Coord [0, 0], Coord [0, 1]], [Coord [1, 0], Coord [1, 1]]]
       Just g `shouldBe` expected
@@ -62,9 +62,9 @@ main = hspec $ do
 
   describe "updates" $ do
     it "(//)"
-      $ (    smallGrid
-        G.// [(Coord [1, 1] :: Coord '[2, 2] Clamp, 42), (Coord [0, 1], 100)]
-        )
+      $          (    smallGrid
+                 G.// [(Coord [1, 1] :: Coord '[2, 2], 42), (Coord [0, 1], 100)]
+                 )
       `shouldBe` fromNestedLists' [[0, 100], [2, 42]]
 
   describe "permutations" $ do
@@ -81,7 +81,7 @@ main = hspec $ do
 
   describe "convolutions" $ do
     it "autoConvolute with Clamp clamps out of bounds" $ do
-      autoConvolute @'[3, 3] @Clamp toNestedLists smallGrid
+      autoConvolute @'[3, 3] clampWindow toNestedLists smallGrid
         `shouldBe` fromNestedLists'
                      [ [ [[0, 0, 1], [0, 0, 1], [2, 2, 3]]
                        , [[0, 1, 1], [0, 1, 1], [2, 3, 3]]
@@ -92,7 +92,7 @@ main = hspec $ do
                      ]
 
     it "autoConvolute with Mod wraps when out of bounds" $ do
-      autoConvolute @'[3, 3] @Mod toNestedLists smallGrid
+      autoConvolute @'[3, 3] wrapWindow toNestedLists smallGrid
         `shouldBe` fromNestedLists'
                      [ [ [[3, 2, 3], [1, 0, 1], [3, 2, 3]]
                        , [[2, 3, 2], [0, 1, 0], [2, 3, 2]]

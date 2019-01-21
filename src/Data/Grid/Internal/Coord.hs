@@ -25,31 +25,31 @@ import           Data.Coerce
 import           Data.List
 import           Data.Singletons.Prelude
 
-data Ind = Mod | Clamp
+data BoundsStrategy = Mod | Clamp
 
-newtype Coord (dims :: [Nat]) (ind :: Ind) = Coord {unCoord :: [Int]}
+newtype Coord (dims :: [Nat]) = Coord {unCoord :: [Int]}
   deriving (Eq)
 
-instance IsList (Coord dims ind) where
-  type Item (Coord dims ind) = Int
+instance IsList (Coord dims) where
+  type Item (Coord dims) = Int
   fromList = coerce
   toList = coerce
 
-instance Show (Coord dims ind)
+instance Show (Coord dims)
   where
     show (Coord cs) = "(" ++ intercalate ", " (show <$> cs) ++ ")"
 
-unconsC :: Coord (n : ns) ind -> (Int, Coord ns ind)
+unconsC :: Coord (n : ns) -> (Int, Coord ns)
 unconsC (Coord (n : ns)) = (n, Coord ns)
 
-appendC :: Coord ns ind -> Coord ms ind -> Coord (ns ++ ms) ind
+appendC :: Coord ns -> Coord ms -> Coord (ns ++ ms) 
 appendC (Coord ns) (Coord ms) = Coord (ns ++ ms)
 
-pattern (:#) :: Int -> (Coord (ns) ind) -> Coord (n:ns) ind
+pattern (:#) :: Int -> (Coord ns ) -> Coord (n:ns) 
 pattern n :# ns <- (unconsC -> (n, ns)) where
   n :# (unCoord -> ns) = Coord (n:ns)
 
-instance (Enum (Coord ns ind)) => Num (Coord ns ind) where
+instance (Enum (Coord ns)) => Num (Coord ns ) where
   (Coord xs) + (Coord ys) = Coord (zipWith (+) xs ys)
   a - b = a + (negate b)
   (Coord xs) * (Coord ys) = Coord (zipWith (*) xs ys)
@@ -61,47 +61,40 @@ instance (Enum (Coord ns ind)) => Num (Coord ns ind) where
 highestIndex :: forall n. KnownNat n => Int
 highestIndex = fromIntegral $ natVal (Proxy @n) - 1
 
-clamp :: (Int, Int) -> Int -> Int
-clamp (start, end) = max start . min end
+clamp :: Int -> Int -> Int -> Int
+clamp start end = max start . min end
 
-instance Bounded (Coord '[] ind) where
+clampCoord :: forall dims. SingI dims => Coord dims -> Coord dims
+clampCoord (Coord ns) = Coord (zipWith (clamp 0 . fromIntegral) (demote @dims) ns)
+
+wrapCoord :: forall dims. SingI dims => Coord dims -> Coord dims
+wrapCoord (Coord ns) = Coord (zipWith mod  ns (fromIntegral <$> demote @dims)) 
+
+instance Bounded (Coord '[] ) where
   minBound = Coord []
   maxBound = Coord []
 
-instance (KnownNat n, Bounded (Coord ns ind)) => Bounded (Coord (n:ns) ind) where
+instance (KnownNat n, Bounded (Coord ns )) => Bounded (Coord (n:ns) ) where
   minBound = 0 :# minBound
   maxBound = highestIndex @n :# maxBound
 
-instance  (KnownNat n) => Enum (Coord '[n] Mod) where
+instance  (KnownNat n) => Enum (Coord '[n]) where
   toEnum i = Coord [i]
-  fromEnum (Coord [i]) = i `mod` (highestIndex @n + 1)
+  fromEnum (Coord [i]) = clamp 0 (highestIndex @n) i
 
-instance  (KnownNat n) => Enum (Coord '[n] Clamp) where
-  toEnum i = Coord [i]
-  fromEnum (Coord [i]) = clamp (0, highestIndex @n) i
-
-instance  (KnownNat x, KnownNat y, SingI rest, Bounded (Coord rest Clamp), Enum (Coord (y:rest) Clamp)) => Enum (Coord (x:y:rest) Clamp) where
+instance  (KnownNat x, KnownNat y, SingI rest, Bounded (Coord rest ), Enum (Coord (y:rest) )) => Enum (Coord (x:y:rest) ) where
   toEnum i | i < 0 = negate $ toEnum (abs i)
-  toEnum i | i > fromEnum (maxBound @(Coord (x:y:rest) Clamp)) = error "Index out of bounds"
+  toEnum i | i > fromEnum (maxBound @(Coord (x:y:rest) )) = error "Index out of bounds"
   toEnum i = (i `div` (inhabitants @(y:rest))) :# toEnum (i `mod` inhabitants @(y:rest))
-  fromEnum (x :# ys) = (clamp (0, highestIndex @x) x * inhabitants @(y:rest)) + fromEnum ys
-
-instance  (KnownNat x, KnownNat y, SingI rest, Bounded (Coord rest Mod), Enum (Coord (y:rest) Mod)) => Enum (Coord (x:y:rest) Mod) where
-  toEnum i | i < 0 = negate $ toEnum (abs i)
-  toEnum i | i > fromEnum (maxBound @(Coord (x:y:rest) Mod)) = error "Index out of bounds"
-  toEnum i = (i `div` (inhabitants @(y:rest))) :# toEnum (i `mod` inhabitants @(y:rest))
-  fromEnum (x :# ys) = ((x `mod` (highestIndex @x + 1))  * inhabitants @(y:rest)) + fromEnum ys
+  fromEnum (x :# ys) = (clamp 0 (highestIndex @x) x * inhabitants @(y:rest)) + fromEnum ys
 
 inhabitants :: forall (dims :: [Nat]) . SingI dims => Int
 inhabitants = product . fmap fromIntegral $ demote @dims
 
-coerceCoord :: Coord ns (i :: Ind) -> Coord ns (j :: Ind)
-coerceCoord = unsafeCoerce
-
-coerceCoordDims :: Coord ns i -> Coord ms i
+coerceCoordDims :: Coord ns -> Coord ms
 coerceCoordDims = unsafeCoerce
 
-coordInBounds :: forall ns i. (SingI ns) => Coord ns i -> Bool
+coordInBounds :: forall ns. (SingI ns) => Coord ns -> Bool
 coordInBounds (Coord cs) = all inRange $ zip cs maxIndexes
   where
     maxIndexes = fromIntegral <$> demote @ns

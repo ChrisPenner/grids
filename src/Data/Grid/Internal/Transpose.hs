@@ -38,8 +38,8 @@ permute
    . ( SingI invertedKey
      , invertedKey ~ InvertKey (EnumFromTo 0 (Length from TL.- 1)) key
      , ValidPermutation key from
-     , Indexable from 
-     , Indexable (Permuted key from) 
+     , Dimensions from 
+     , Dimensions (Permuted key from) 
      )
   => Grid from a
   -> Grid (Permuted key from) a
@@ -48,13 +48,13 @@ permute (Grid v) = result
   len = V.length v
   result :: Grid (Permuted key from) a
   result = tabulate
-    ((v V.!) . fromEnum @(Coord from Clamp) . permuteCoord @invertedKey @from)
+    ((v V.!) . fromEnum  . permuteCoord @invertedKey @from)
 
 permuteCoord
-  :: forall (key :: [Nat]) to from ind
+  :: forall (key :: [Nat]) to from 
    . (SingI key)
-  => Coord from ind
-  -> Coord to ind
+  => Coord from 
+  -> Coord to 
 permuteCoord (Coord cs) = Coord newCoord
  where
   key :: [Int]

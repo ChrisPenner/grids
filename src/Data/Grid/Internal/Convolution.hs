@@ -24,50 +24,48 @@ criticalError = error
   "Something went wrong, please report this issue to the maintainer of grids"
 
 autoConvolute
-  :: forall window ind dims a b
-   . ( Indexable dims
-     , Enum (Coord dims ind)
-     , Neighboring (Coord window ind) (Grid window)
-     , Enum (Coord window ind)
+  :: forall window dims f a b
+   . ( Dimensions dims
+     , Dimensions window
+     , Functor f
+     , Neighboring (Coord window) (Grid window)
      )
-  => (Grid window a -> b)
+  => (Grid window (Coord dims) -> f (Coord dims))
+  -> (f a -> b)
   -> Grid dims a
   -> Grid dims b
-autoConvolute = convolute @ind (window @window @dims @ind)
+autoConvolute restrict = gconvolute (restrict . window @window @dims)
 
 gconvolute
-  :: forall ind dims f a b
-   . (Functor f, Indexable dims, Enum (Coord dims ind))
-  => (Coord dims ind -> f (Coord dims ind))
+  :: forall dims f a b
+   . (Functor f, Dimensions dims)
+  => (Coord dims -> f (Coord dims))
   -> (f a -> b)
   -> Grid dims a
   -> Grid dims b
 gconvolute selectWindow f g =
-  let
-    s = store (index g) criticalError
-    convoluted :: Store (Grid dims) b
-    convoluted =
-      extend (f . experiment (fmap roundTrip . selectWindow . coerceCoord)) s
-    (tabulator, _) = runStore convoluted
-  in
-    tabulate tabulator
+  let s = store (index g) criticalError
+      convoluted :: Store (Grid dims) b
+      convoluted     = extend (f . experiment (fmap roundTrip . selectWindow)) s
+      (tabulator, _) = runStore convoluted
+  in  tabulate tabulator
  where
-  roundTrip :: Coord dims ind -> Coord dims Clamp
+  roundTrip :: Coord dims -> Coord dims
   roundTrip = toEnum . fromEnum
 
 convolute
-  :: forall ind window dims a b
-   . (Indexable dims, Enum (Coord dims ind))
-  => (Coord dims ind -> Grid window (Coord dims ind))
+  :: forall window dims a b
+   . (Dimensions dims)
+  => (Coord dims -> Grid window (Coord dims))
   -> (Grid window a -> b)
   -> Grid dims a
   -> Grid dims b
 convolute = gconvolute
 
 safeConvolute
-  :: forall ind window dims a b
-   . (Indexable dims, Enum (Coord dims ind))
-  => (Coord dims ind -> Grid window (Coord dims ind))
+  :: forall window dims a b
+   . (Dimensions dims)
+  => (Coord dims -> Grid window (Coord dims))
   -> (Grid window (Maybe a) -> b)
   -> Grid dims a
   -> Grid dims b
@@ -75,8 +73,7 @@ safeConvolute selectWindow f = gconvolute (restrict . selectWindow)
                                           (f . getCompose)
  where
   restrict
-    :: Grid window (Coord dims ind)
-    -> Compose (Grid window) Maybe (Coord dims ind)
+    :: Grid window (Coord dims) -> Compose (Grid window) Maybe (Coord dims)
   restrict = Compose . fmap go
    where
     go b | coordInBounds b = Just b
@@ -84,25 +81,25 @@ safeConvolute selectWindow f = gconvolute (restrict . selectWindow)
 
 safeAutoConvolute
   :: forall window dims a b
-   . ( Indexable dims
-     , Indexable window
-     , Neighboring (Coord window Clamp) (Grid window)
+   . ( Dimensions dims
+     , Dimensions window
+     , Neighboring (Coord window) (Grid window)
      )
   => (Grid window (Maybe a) -> b)
   -> Grid dims a
   -> Grid dims b
-safeAutoConvolute = safeConvolute @Clamp window
+safeAutoConvolute = safeConvolute window
 
 window
-  :: forall window dims ind
-   . (Neighboring (Coord window ind) (Grid window), Num (Coord window ind))
-  => Coord dims ind
-  -> Grid window (Coord dims ind)
+  :: forall window dims
+   . (Neighboring (Coord window) (Grid window), Num (Coord window))
+  => Coord dims
+  -> Grid window (Coord dims)
 window = fromWindow . neighboring . toWindow
  where
-  toWindow :: Coord dims ind -> Coord window ind
+  toWindow :: Coord dims -> Coord window
   toWindow = coerceCoordDims
-  fromWindow :: Grid window (Coord window ind) -> Grid window (Coord dims ind)
+  fromWindow :: Grid window (Coord window) -> Grid window (Coord dims)
   fromWindow = fmap coerceCoordDims
 
 -- data Orth a =
@@ -113,7 +110,7 @@ window = fromWindow . neighboring . toWindow
 --     , left :: a
 --     } deriving (Eq, Show, Functor, Traversable, Foldable)
 
--- orthNeighbours :: Coord dims ind -> Compose Orth Maybe (Coord dims ind)
+-- orthNeighbours :: Coord dims  -> Compose Orth Maybe (Coord dims )
 -- orthNeighbours c = Compose
 --   (   toMaybe
 --   <$> traverse
@@ -131,20 +128,26 @@ window = fromWindow . neighboring . toWindow
 class Neighboring c g where
   neighbors :: g c
 
-instance {-# OVERLAPPING #-} (KnownNat n) => Neighboring (Coord '[n] ind) (Grid '[n]) where
+instance {-# OVERLAPPING #-} (KnownNat n) => Neighboring (Coord '[n] ) (Grid '[n]) where
   neighbors = fromList' . fmap (Coord . pure . subtract (numVals `div` 2)) . take numVals $ [0 .. ]
     where
       numVals = inhabitants @'[n]
 
-instance (KnownNat n, Neighboring (Coord ns ind) (Grid ns)) => Neighboring (Coord (n:ns) ind) (Grid (n:ns)) where
+instance (KnownNat n, Neighboring (Coord ns ) (Grid ns)) => Neighboring (Coord (n:ns) ) (Grid (n:ns)) where
   neighbors = joinGrid (addCoord <$> currentLevelNeighbors)
     where
-      addCoord :: Coord '[n] ind -> Grid ns (Coord (n : ns) ind)
+      addCoord :: Coord '[n]  -> Grid ns (Coord (n : ns) )
       addCoord c = (appendC c) <$> nestedNeighbors
-      nestedNeighbors :: Grid ns (Coord ns ind)
+      nestedNeighbors :: Grid ns (Coord ns )
       nestedNeighbors = neighbors
-      currentLevelNeighbors :: Grid '[n] (Coord '[n] ind)
+      currentLevelNeighbors :: Grid '[n] (Coord '[n] )
       currentLevelNeighbors = neighbors
 
 neighboring :: (Num c, Neighboring c (Grid dims)) => c -> Grid dims c
 neighboring c = (c +) <$> neighbors
+
+clampWindow :: (Dimensions dims) => Grid window (Coord dims) -> Grid window (Coord dims)
+clampWindow = fmap clampCoord
+
+wrapWindow :: (Dimensions dims) => Grid window (Coord dims) -> Grid window (Coord dims)
+wrapWindow = fmap wrapCoord
