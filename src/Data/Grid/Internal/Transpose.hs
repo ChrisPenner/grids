@@ -33,6 +33,28 @@ type ValidPermutation key from =
                 :$$: Text "e.g. matrix transpose for 2x2 is @[1, 0]"
   )
 
+-- | Permute dimensions of a 'Grid'. This is similar to MatLab's permute
+-- function
+--
+-- 'permute' requires a type application containing a permutation pattern;
+-- The pattern is a re-ordering of the list @[0..n]@ which represents the new
+-- dimension order. For example the permutation pattern @[1, 2, 0]@ when
+-- applied to the dimensions @[4, 5, 6]@ results in the dimensions @[5, 6, 4]@.
+--
+-- For 2 dimensional matrixes, a permutation using @[1, 0]@ is simply a 
+-- matrix 'transpose'
+--
+-- > λ> small
+-- > fromNestedLists
+-- >   [[0,1,2]
+-- >   ,[3,4,5]
+-- >   ,[6,7,8]]
+-- >
+-- > λ> permute @[1, 0] small
+-- > fromNestedLists
+-- >   [[0,3,6]
+-- >   ,[1,4,7]
+-- >   ,[2,5,8]]
 permute
   :: forall (key :: [Nat]) from a invertedKey
    . ( SingI invertedKey
@@ -50,6 +72,8 @@ permute (Grid v) = result
   result = tabulate
     ((v V.!) . fromEnum  . permuteCoord @invertedKey @from)
 
+-- | Permute the dimensions of a coordinate according to a permutation pattern.
+-- see 'permute' regarding permutation patterns
 permuteCoord
   :: forall (key :: [Nat]) to from 
    . (SingI key)
@@ -62,9 +86,13 @@ permuteCoord (Coord cs) = Coord newCoord
   newCoord :: [Int]
   newCoord = (cs !!) <$> key
 
+-- | Transpose a 2 dimensional matrix. Equivalent to:
+--
+-- > permute @[1, 0]
 transpose :: (KnownNat x, KnownNat y) => Grid '[x, y] a -> Grid '[y, x] a
 transpose = permute @'[1, 0]
 
+-- | Get the inverse of a permutation pattern, used internally
 type family InvertKey ref key :: [Nat] where
   InvertKey '[] xs = '[]
   InvertKey (n:ns) xs = FromJust (ElemIndex n xs) : InvertKey ns xs

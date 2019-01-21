@@ -1,9 +1,9 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
-module Data.Grid.Lens where
+module Data.Grid.Internal.Lens where
 
-import Data.Grid
+import Data.Grid.Internal.Grid
 import Data.Functor.Rep as R
 import Data.Vector as V
 import Data.Proxy
@@ -14,7 +14,7 @@ type Lens' s a  = Lens s s a a
 lens :: (s -> a) -> (s -> b -> t) -> Lens s t a b
 lens sa sbt afb s = sbt s <$> afb (sa s)
 
--- | Focus an element of a grid
+-- | Focus an element of a 'Grid' given its 'Coord'
 cell
   :: forall ind dims a
    . (Dimensions dims)

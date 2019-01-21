@@ -65,11 +65,11 @@ instance (Dimensions dims) => Distributive (Grid dims) where
 instance (Dimensions dims) => Representable (Grid dims) where
   type Rep (Grid dims) = Coord dims
   index (Grid v) c = v V.! fromEnum c
-  tabulate f = Grid $ V.generate (fromIntegral $ inhabitants @dims) (f . toEnum  . fromIntegral)
+  tabulate f = Grid $ V.generate (fromIntegral $ gridSize @dims) (f . toEnum  . fromIntegral)
 
 -- | Build a grid by selecting an element for each element
-generate :: forall dims ind a . (SingI dims) => (Int -> a) -> Grid dims a
-generate f = Grid $ V.generate (inhabitants @dims) f
+generate :: forall dims a . (SingI dims) => (Int -> a) -> Grid dims a
+generate f = Grid $ V.generate (gridSize @dims) f
 
 -- | Turn a grid into a nested list structure. List nesting increases for each
 -- dimension
@@ -77,7 +77,7 @@ generate f = Grid $ V.generate (inhabitants @dims) f
 -- > toNestedLists (G.generate id :: Grid [2, 3] Int)
 -- > [[0,1,2],[3,4,5]]
 toNestedLists
-  :: forall ind dims a . (Dimensions dims) => Grid dims a -> NestedLists dims a
+  :: forall dims a . (Dimensions dims) => Grid dims a -> NestedLists dims a
 toNestedLists (Grid v) = nestLists (Proxy @dims) v
 
 -- | Turn a nested list structure into a Grid if the list is well formed. 
@@ -88,7 +88,7 @@ toNestedLists (Grid v) = nestLists (Proxy @dims) v
 -- > fromNestedLists [[0],[1,2]] :: Maybe (Grid [2, 3] Int)
 -- > Nothing
 fromNestedLists
-  :: forall ind dims a
+  :: forall dims a
    . Dimensions dims
   => NestedLists dims a
   -> Maybe (Grid dims a)
@@ -96,7 +96,7 @@ fromNestedLists = fromList . unNestLists (Proxy @dims)
 
 -- | Partial variant of 'fromNestedLists' which errors on malformed input
 fromNestedLists'
-  :: forall ind dims a . Dimensions dims => NestedLists dims a -> Grid dims a
+  :: forall dims a . Dimensions dims => NestedLists dims a -> Grid dims a
 fromNestedLists' = fromJust . fromNestedLists
 
 -- | Convert a list into a Grid or fail if not provided the correct number of
@@ -106,13 +106,13 @@ fromNestedLists' = fromJust . fromNestedLists
 -- > Just (Grid [[0,1,2],[3,4,5]])
 -- > G.fromList [0, 1, 2, 3] :: Maybe (Grid [2, 3] Int)
 -- > Nothing
-fromList :: forall dims ind a . (SingI dims) => [a] -> Maybe (Grid dims a)
+fromList :: forall dims a . (SingI dims) => [a] -> Maybe (Grid dims a)
 fromList xs =
   let v = V.fromList xs
-  in  if V.length v == inhabitants @dims then Just $ Grid v else Nothing
+  in  if V.length v == gridSize @dims then Just $ Grid v else Nothing
 
 -- | Partial variant of 'fromList' which errors on malformed input
-fromList' :: forall dims ind a . (SingI dims) => [a] -> Grid dims a
+fromList' :: forall dims a . (SingI dims) => [a] -> Grid dims a
 fromList' = fromJust . fromList
 
 toList :: Grid dims a -> [a]
@@ -120,7 +120,7 @@ toList (Grid v) = V.toList v
 
 -- | Update elements of a grid
 (//)
-  :: forall ind dims a
+  :: forall dims a
    . (Enum (Coord dims ))
   => Grid dims a
   -> [(Coord dims , a)]

@@ -25,10 +25,27 @@ import           Data.Coerce
 import           Data.List
 import           Data.Singletons.Prelude
 
-data BoundsStrategy = Mod | Clamp
-
+-- | The index type for 'Grid's.
 newtype Coord (dims :: [Nat]) = Coord {unCoord :: [Int]}
   deriving (Eq)
+
+-- Safely construct a 'Coord' for a given grid size, checking that all
+-- indexes are in range
+--
+-- > λ> coord @[3, 3] [1, 2]
+-- > Just [1, 2]
+-- >
+-- > λ> coord @[3, 3] [3, 3]
+-- > Nothing
+-- >
+-- > λ> coord @[3, 3] [1, 2, 3]
+-- > Nothing
+coord :: forall dims. SingI dims => [Int] -> Maybe (Coord dims)
+coord ds = if inRange && correctLength then Just (Coord ds)
+                      else Nothing
+  where
+    inRange = all (>=0) ds && all id (zipWith (<) ds (fromIntegral <$> demote @dims))
+    correctLength = length ds == length (demote @dims)
 
 instance IsList (Coord dims) where
   type Item (Coord dims) = Int
@@ -37,7 +54,7 @@ instance IsList (Coord dims) where
 
 instance Show (Coord dims)
   where
-    show (Coord cs) = "(" ++ intercalate ", " (show <$> cs) ++ ")"
+    show (Coord cs) = "[" ++ intercalate ", " (show <$> cs) ++ "]"
 
 unconsC :: Coord (n : ns) -> (Int, Coord ns)
 unconsC (Coord (n : ns)) = (n, Coord ns)
@@ -45,7 +62,7 @@ unconsC (Coord (n : ns)) = (n, Coord ns)
 appendC :: Coord ns -> Coord ms -> Coord (ns ++ ms) 
 appendC (Coord ns) (Coord ms) = Coord (ns ++ ms)
 
-pattern (:#) :: Int -> (Coord ns ) -> Coord (n:ns) 
+pattern (:#) :: Int -> Coord ns -> Coord (n:ns) 
 pattern n :# ns <- (unconsC -> (n, ns)) where
   n :# (unCoord -> ns) = Coord (n:ns)
 
@@ -85,11 +102,11 @@ instance  (KnownNat n) => Enum (Coord '[n]) where
 instance  (KnownNat x, KnownNat y, SingI rest, Bounded (Coord rest ), Enum (Coord (y:rest) )) => Enum (Coord (x:y:rest) ) where
   toEnum i | i < 0 = negate $ toEnum (abs i)
   toEnum i | i > fromEnum (maxBound @(Coord (x:y:rest) )) = error "Index out of bounds"
-  toEnum i = (i `div` (inhabitants @(y:rest))) :# toEnum (i `mod` inhabitants @(y:rest))
-  fromEnum (x :# ys) = (clamp 0 (highestIndex @x) x * inhabitants @(y:rest)) + fromEnum ys
+  toEnum i = (i `div` (gridSize @(y:rest))) :# toEnum (i `mod` gridSize @(y:rest))
+  fromEnum (x :# ys) = (clamp 0 (highestIndex @x) x * gridSize @(y:rest)) + fromEnum ys
 
-inhabitants :: forall (dims :: [Nat]) . SingI dims => Int
-inhabitants = product . fmap fromIntegral $ demote @dims
+gridSize :: forall (dims :: [Nat]) . SingI dims => Int
+gridSize = product . fmap fromIntegral $ demote @dims
 
 coerceCoordDims :: Coord ns -> Coord ms
 coerceCoordDims = unsafeCoerce

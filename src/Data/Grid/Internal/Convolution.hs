@@ -28,7 +28,7 @@ autoConvolute
    . ( Dimensions dims
      , Dimensions window
      , Functor f
-     , Neighboring (Coord window) (Grid window)
+     , Neighboring window
      )
   => (Grid window (Coord dims) -> f (Coord dims))
   -> (f a -> b)
@@ -81,10 +81,7 @@ safeConvolute selectWindow f = gconvolute (restrict . selectWindow)
 
 safeAutoConvolute
   :: forall window dims a b
-   . ( Dimensions dims
-     , Dimensions window
-     , Neighboring (Coord window) (Grid window)
-     )
+   . (Dimensions dims, Dimensions window, Neighboring window)
   => (Grid window (Maybe a) -> b)
   -> Grid dims a
   -> Grid dims b
@@ -92,7 +89,7 @@ safeAutoConvolute = safeConvolute window
 
 window
   :: forall window dims
-   . (Neighboring (Coord window) (Grid window), Num (Coord window))
+   . (Neighboring window, Dimensions window)
   => Coord dims
   -> Grid window (Coord dims)
 window = fromWindow . neighboring . toWindow
@@ -125,29 +122,31 @@ window = fromWindow . neighboring . toWindow
 -- orthFromList [up', right', down', left'] =
 --   Orth {up = up, right = right', down = down', left = left'}
 
-class Neighboring c g where
-  neighbors :: g c
+class Neighboring dims where
+  neighbors :: Grid dims (Coord dims)
 
-instance {-# OVERLAPPING #-} (KnownNat n) => Neighboring (Coord '[n] ) (Grid '[n]) where
+instance {-# OVERLAPPING #-} (KnownNat n) => Neighboring '[n]  where
   neighbors = fromList' . fmap (Coord . pure . subtract (numVals `div` 2)) . take numVals $ [0 .. ]
     where
-      numVals = inhabitants @'[n]
+      numVals = gridSize @'[n]
 
-instance (KnownNat n, Neighboring (Coord ns ) (Grid ns)) => Neighboring (Coord (n:ns) ) (Grid (n:ns)) where
+instance (KnownNat n, Neighboring ns) => Neighboring (n:ns) where
   neighbors = joinGrid (addCoord <$> currentLevelNeighbors)
     where
       addCoord :: Coord '[n]  -> Grid ns (Coord (n : ns) )
-      addCoord c = (appendC c) <$> nestedNeighbors
+      addCoord c = appendC c <$> nestedNeighbors
       nestedNeighbors :: Grid ns (Coord ns )
       nestedNeighbors = neighbors
       currentLevelNeighbors :: Grid '[n] (Coord '[n] )
       currentLevelNeighbors = neighbors
 
-neighboring :: (Num c, Neighboring c (Grid dims)) => c -> Grid dims c
+neighboring :: (Dimensions dims, Neighboring dims) => Coord dims -> Grid dims (Coord dims)
 neighboring c = (c +) <$> neighbors
 
-clampWindow :: (Dimensions dims) => Grid window (Coord dims) -> Grid window (Coord dims)
+clampWindow
+  :: (Dimensions dims) => Grid window (Coord dims) -> Grid window (Coord dims)
 clampWindow = fmap clampCoord
 
-wrapWindow :: (Dimensions dims) => Grid window (Coord dims) -> Grid window (Coord dims)
+wrapWindow
+  :: (Dimensions dims) => Grid window (Coord dims) -> Grid window (Coord dims)
 wrapWindow = fmap wrapCoord

@@ -41,5 +41,5 @@ instance (KnownNat x) => Dimensions '[x] where
   unNestLists _ xs = xs
 
 instance (KnownNat x, Bounded (Coord xs), SingI xs, Dimensions (y:xs)) => Dimensions (x:y:xs) where
-  nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (inhabitants @(y:xs)) v
+  nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (gridSize @(y:xs)) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
