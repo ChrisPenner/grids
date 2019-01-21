@@ -34,6 +34,7 @@ import           Data.List
 import           Data.Bifunctor
 import           Data.Maybe
 import           Data.Singletons.Prelude
+import           Control.DeepSeq
 
 type Indexable dims ind = (Dimensions dims, Enum (Coord dims ind), SingI dims)
 
@@ -46,7 +47,7 @@ type Indexable dims ind = (Dimensions dims, Enum (Coord dims ind), SingI dims)
 -- >        [3,4,5]])
 newtype Grid (dims :: [Nat]) a =
   Grid  {toVector :: V.Vector a}
-  deriving (Eq, Functor, Foldable, Traversable)
+  deriving (Eq, Functor, Foldable, Traversable, NFData)
 
 instance (PrettyList (NestedLists dims a), Dimensions dims, Show (NestedLists dims a)) => Show (Grid dims a) where
   show g = "fromNestedLists \n" ++ (unlines . fmap ("  " ++ ) . lines $ prettyList (toNestedLists g))

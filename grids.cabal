@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 54deef5f689f900805ffc695b3bdfc008ed4ab90023be93c1f0dd163813d5a3b
+-- hash: 238c4474a585c04b041bccf5ff6b1e441d647d43f79f0c61b1443bfa1f98bc36
 
 name:           grids
 version:        0.2.0.0
@@ -49,6 +49,7 @@ library
       adjunctions
     , base >=4.7 && <5
     , comonad
+    , deepseq
     , distributive
     , singletons
     , vector
@@ -67,9 +68,31 @@ test-suite specs
       adjunctions
     , base >=4.7 && <5
     , comonad
+    , deepseq
     , distributive
     , grids
     , hspec
+    , singletons
+    , vector
+  default-language: Haskell2010
+
+benchmark stat
+  type: exitcode-stdio-1.0
+  main-is: Benchmarks.hs
+  other-modules:
+      Paths_grids
+  hs-source-dirs:
+      benchmarks
+  default-extensions: KindSignatures PolyKinds TypeApplications ScopedTypeVariables TypeOperators TypeFamilies FlexibleInstances FlexibleContexts MultiParamTypeClasses DataKinds GeneralizedNewtypeDeriving DeriveTraversable DeriveFunctor ConstraintKinds
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -main-is Benchmarks
+  build-depends:
+      adjunctions
+    , base >=4.7 && <5
+    , comonad
+    , deepseq
+    , distributive
+    , gauge
+    , grids
     , singletons
     , vector
   default-language: Haskell2010
