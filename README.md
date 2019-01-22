@@ -2,6 +2,10 @@
 
 [HACKAGE](http://hackage.haskell.org/package/grids)
 
+**Note** this lib is still pretty new and relatively experimental, as such it
+doesn't have great performance characteristics. Maybe don't use it in
+performance critical applications.
+
 Grids can have an arbitrary amount of dimensions, specified by a type-level
 list of `Nat`s.
 
