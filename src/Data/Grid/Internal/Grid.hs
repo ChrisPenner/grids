@@ -66,6 +66,14 @@ instance (Dimensions dims) => Representable (Grid dims) where
   index (Grid v) c = v V.! fromEnum c
   tabulate f = Grid $ V.generate (fromIntegral $ gridSize @dims) (f . toEnum  . fromIntegral)
 
+instance (Num n, Dimensions dims) => Num (Grid dims n) where
+  (+)  = liftA2 (+)
+  (*)  = liftA2 (*)
+  abs = fmap abs
+  signum = fmap signum
+  fromInteger = pure . fromInteger
+  negate = fmap negate
+
 -- | Build a grid by selecting an element for each element
 generate :: forall dims a . (SingI dims) => (Int -> a) -> Grid dims a
 generate f = Grid $ V.generate (gridSize @dims) f

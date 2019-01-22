@@ -5,9 +5,16 @@
 Grids can have an arbitrary amount of dimensions, specified by a type-level
 list of `Nat`s.
 
-Each grid has Functor, Applicative, and Representable instances making it easy to do **Matlab-style** matrix programming. `liftA2 (+)` does piecewise addition, etc.
+Each grid has Functor, Applicative, and Representable instances making it easy
+to do **Matlab-style** matrix programming. The `Applicative` instance operates
+piecewise making it easy to do most math operations. There's a `Num` instance
+for grids holding numbers, so piecewise addition is just `grid1 + grid2`, the
+`fromInteger` implementation allows things like `myGrid * 5` to perform
+multiplication (although it's likely less efficient than using fmap!)
 
-By combining with `Control.Comonad.Representable.Store` you can do context-wise **linear transformations** for things like **Image Processing** or **Cellular Automata**.
+By combining with `Control.Comonad.Representable.Store` you can do context-wise
+**linear transformations** for things like **Image Processing** or **Cellular
+Automata**.
 
 All in a typesafe package!
 
