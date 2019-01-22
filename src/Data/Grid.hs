@@ -12,7 +12,6 @@ module Data.Grid
 
   -- * Collapsing
   , toNestedLists
-  , toList
 
   -- * Indexing
   , Coord(..)
@@ -29,14 +28,12 @@ module Data.Grid
 
   -- * Convolution
   , autoConvolute
-  , safeConvolute
-  , safeAutoConvolute
   , convolute
-  , gconvolute
 
   -- ** Window restriction
   , clampWindow
   , wrapWindow
+  , safeWindow
 
   -- * Permutations
   , transpose
@@ -56,9 +53,6 @@ module Data.Grid
   , Neighboring
   , ValidPermutation
   , Permuted
-
-  -- * Re-exports
-  , module R
   )
 where
 
@@ -68,5 +62,4 @@ import           Data.Grid.Internal.Lens
 import           Data.Grid.Internal.Transpose
 import           Data.Grid.Internal.Coord
 import           Data.Grid.Internal.Convolution
-import           Data.Functor.Rep as R hiding (tabulate, index)
 import           Data.Functor.Rep as Rep

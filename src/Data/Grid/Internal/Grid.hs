@@ -13,7 +13,6 @@ module Data.Grid.Internal.Grid
   , fromNestedLists'
   , fromList
   , fromList'
-  , toList
   , (//)
   )
 where
@@ -114,9 +113,6 @@ fromList xs =
 -- | Partial variant of 'fromList' which errors on malformed input
 fromList' :: forall dims a . (SingI dims) => [a] -> Grid dims a
 fromList' = fromJust . fromList
-
-toList :: Grid dims a -> [a]
-toList (Grid v) = V.toList v
 
 -- | Update elements of a grid
 (//)

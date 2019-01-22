@@ -29,7 +29,7 @@ import           Data.Singletons.Prelude
 newtype Coord (dims :: [Nat]) = Coord {unCoord :: [Int]}
   deriving (Eq)
 
--- Safely construct a 'Coord' for a given grid size, checking that all
+-- | Safely construct a 'Coord' for a given grid size, checking that all
 -- indexes are in range
 --
 -- > λ> coord @[3, 3] [1, 2]
@@ -56,9 +56,11 @@ instance Show (Coord dims)
   where
     show (Coord cs) = "[" ++ intercalate ", " (show <$> cs) ++ "]"
 
+-- | Get the first index from a 'Coord'
 unconsC :: Coord (n : ns) -> (Int, Coord ns)
 unconsC (Coord (n : ns)) = (n, Coord ns)
 
+-- | Append two 'Coord's
 appendC :: Coord ns -> Coord ms -> Coord (ns ++ ms) 
 appendC (Coord ns) (Coord ms) = Coord (ns ++ ms)
 
