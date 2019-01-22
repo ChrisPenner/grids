@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 88e748578378d344ecfdf0e11d315fd6c38bba1687b3e24c559b068734322995
+-- hash: b776a0436dd05eb78d384efe21494a96d7c6b28f0de9046d2011ea75f53025df
 
 name:           grids
-version:        0.2.0.0
+version:        0.3.0.0
 description:    Arbitrary sized type-safe grids with useful combinators
 category:       Data Structures
 homepage:       https://github.com/ChrisPenner/grids#readme

@@ -102,8 +102,8 @@ main = hspec $ do
                        ]
                      ]
 
-    it "safeAutoConvolute gets 'Nothing' for out of bounds" $ do
-      safeAutoConvolute @'[3, 3] toNestedLists smallGrid
+    it "autoConvolut with safeWindow gets 'Nothing' for out of bounds" $ do
+      autoConvolute @'[3, 3] safeWindow (toNestedLists . getCompose) smallGrid
         `shouldBe` fromNestedLists'
                      [ [ [ [Nothing, Nothing, Nothing]
                          , [Nothing, Just 0, Just 1]
