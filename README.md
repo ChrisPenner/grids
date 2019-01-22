@@ -75,31 +75,25 @@ You can do things like piecewise addition using their applicative instance:
 
 ## Indexing
 
-You can index into a grid using the `Coord` type family. The number of
-coordinates you need depends on the shape of the grid. The Coord is stitched
-together using the `:#` constructor from 1 or more `Finite` values. Each Finite
-value is scoped to the size of its dimension, so you'll need to prove that each
-index is within range (or just use `finite` to wrap an `Integer` and the
-compiler will trust you). Here's the type of Coord for a few different Grids:
+You can index into a grid using the `Coord` type. The number of
+coordinates you need depends on the shape of the grid. 
+`Coord` is really just a wrapping over a list of integers. It's recommended that
+you use `coord` to safely construct `Coord` values, but you can cheat and use 
+the `Coord` constructor or even `OverLoadedLists` if you want to.
+ Here's the type of Coord for a few different Grids:
 
-```haskell
-Coord '[1] == Finite 1
-Coord '[1, 2] == Finite 1 :# Finite 2
-Coord '[1, 2, 3] == Finite 1 :# Finite 2 :# Finite 3
-```
-
-You can get a value at an index out using `index` from `Data.Functor.Rep`:
+You can get a value out of a grid for a particular index out using `index` from `Data.Functor.Rep`:
 
 ```haskell
 λ> let g = generate id :: Grid '[2, 3] Int
 λ> g
 (Grid [[0,1,2]
       ,[3,4,5]])
-λ> g `index` (1 :# 1)
+λ> g `index` Coord [1 , 1]
 4
-λ> g `index` (1 :# 0)
+λ> g `index` Coord [1, 0]
 3
-λ> g `index` (0 :# 2)
+λ> g `index` Coord [0,  2]
 2
 ```
 
@@ -107,16 +101,16 @@ You can also use the `cell` Lens from `Data.Grid.Lens` to access and mutate
 indices:
 
 ```haskell
-λ> g ^. cell (0 :# 1)
+λ> g ^. cell (Coord [0, 1])
 1
-λ> g & cell (0 :# 1) *~ 1000
+λ> g & cell (Coord [0, 1]) *~ 1000
 (Grid [[0,1000,2],[3,4,5]])
 ```
 
 ## Creation
 
 You can generate a grid by providing a function over the integer position in the grid (`generate`) or by providing
-a function over the coordinate position of the cell (`tabulate`).
+a function over the coordinate position of the cell (`tabulate`). Or of course you can just use `pure`
 
 You can also use the `fromList` and `fromNestedLists` functions which return a
 `Maybe (Grid dims a)` depending on whether the input list is well formed.
