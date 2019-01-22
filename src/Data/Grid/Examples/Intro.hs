@@ -39,16 +39,23 @@ big :: Grid '[5, 5, 5, 5] Int
 big = generate id
 
 gauss :: (Dimensions dims) => Grid dims Double -> Grid dims Double
-gauss = safeAutoConvolute gauss'
+gauss = autoConvolute safeWindow gauss'
  where
-  gauss' :: Grid '[3, 3] (Maybe Double) -> Double
-  gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
+  gauss' :: Compose (Grid '[3, 3]) Maybe Double -> Double
+  gauss' g = (sum g) / fromIntegral (length g)
+
+clampGauss :: (Dimensions dims) => Grid dims Double -> Grid dims Double
+clampGauss = autoConvolute clampWindow gauss'
+ where
+  gauss' :: Grid '[3, 3] Double -> Double
+  gauss' g = sum g / fromIntegral (length g)
+
 
 seeNeighboring :: Grid '[3, 3] a -> Grid '[3, 3] (Grid '[3, 3] (Maybe a))
-seeNeighboring = safeAutoConvolute go
+seeNeighboring = autoConvolute safeWindow go
  where
-  go :: Grid '[3, 3] (Maybe a) -> Grid '[3, 3] (Maybe a)
-  go = coerce
+  go :: Compose (Grid '[3, 3]) Maybe a -> Grid '[3, 3] (Maybe a)
+  go = getCompose . coerce
 
 coords :: Grid '[3, 3] (Coord '[3, 3])
 coords = tabulate id
@@ -58,10 +65,6 @@ doubleGrid = fromIntegral <$> small
 
 simpleGauss :: Grid '[3, 3] Double
 simpleGauss = gauss doubleGrid
-
-myGauss :: Grid '[9, 9] Double -> Grid '[9, 9] Double
-myGauss = safeAutoConvolute @'[3, 3] gauss'
-  where gauss' g = (sum . Compose $ g) / fromIntegral (length (Compose g))
 
 pacmanGauss :: (Dimensions dims) => Grid dims Double -> Grid dims Double
 pacmanGauss = autoConvolute @'[3, 3] wrapWindow gauss'
