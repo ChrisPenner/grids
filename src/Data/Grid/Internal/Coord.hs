@@ -107,6 +107,9 @@ instance  (KnownNat x, KnownNat y, SingI rest, Bounded (Coord rest ), Enum (Coor
   toEnum i = (i `div` (gridSize @(y:rest))) :# toEnum (i `mod` gridSize @(y:rest))
   fromEnum (x :# ys) = (clamp 0 (highestIndex @x) x * gridSize @(y:rest)) + fromEnum ys
 
+-- | Get the total size of a 'Grid' of the given dimensions
+--
+-- > gridSize @'[2, 2] == 4
 gridSize :: forall (dims :: [Nat]) . SingI dims => Int
 gridSize = product . fmap fromIntegral $ demote @dims
 
