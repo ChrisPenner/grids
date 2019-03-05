@@ -25,6 +25,13 @@ avg f | null f    = 0
 mx :: Foldable f => f Int -> Int
 mx = maximum
 
+verySmall :: Grid '[2, 2] Int
+verySmall = generate id
+
+result ::
+  Grid '[2, 2] (NZipper 2 Int)
+result = convolute orthNeighbours id verySmall
+
 small :: Grid '[3, 3] Int
 small = generate id
 

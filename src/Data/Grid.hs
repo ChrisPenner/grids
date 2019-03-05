@@ -26,6 +26,9 @@ module Data.Grid
   , clampBounds
   , wrapBounds
   , omitBounds
+
+  , NZipper
+  , orthNeighbours
    -- * Permutations
   , transpose
   , permute

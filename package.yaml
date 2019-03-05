@@ -43,6 +43,7 @@ dependencies:
 - comonad
 - singletons
 - deepseq
+- lens
 
 library:
   source-dirs: src
