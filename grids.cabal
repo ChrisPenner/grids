@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.0.
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 490b2d74518f3dab7aa7913124fee6f267789d7ada2e37e51720274e0092d25a
+-- hash: b723bbe27209b5502cb6ebbfc97feae219581363eee3070e5bee416683bb831c
 
 name:           grids
 version:        0.3.0.0
@@ -50,6 +50,7 @@ library
   build-depends:
       adjunctions
     , base >=4.7 && <5
+    , bifunctors
     , comonad
     , deepseq
     , distributive
@@ -70,6 +71,7 @@ test-suite specs
   build-depends:
       adjunctions
     , base >=4.7 && <5
+    , bifunctors
     , comonad
     , deepseq
     , distributive
@@ -92,6 +94,7 @@ benchmark stat
   build-depends:
       adjunctions
     , base >=4.7 && <5
+    , bifunctors
     , comonad
     , deepseq
     , distributive

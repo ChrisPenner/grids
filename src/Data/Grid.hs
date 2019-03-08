@@ -27,6 +27,9 @@ module Data.Grid
   , wrapBounds
   , omitBounds
 
+  , window
+  , windowContext
+
   , NZipper
   , orthNeighbours
    -- * Permutations
@@ -42,6 +45,7 @@ module Data.Grid
   , Dimensions
   , NestedLists
   , Neighboring
+  , Neighbours(..)
   , ValidPermutation
   , Permuted
   ) where

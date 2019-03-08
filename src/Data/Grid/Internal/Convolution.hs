@@ -5,6 +5,10 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DeriveTraversable #-}
+
 
 module Data.Grid.Internal.Convolution 
   ( autoConvolute
@@ -13,6 +17,9 @@ module Data.Grid.Internal.Convolution
   , wrapBounds
   , omitBounds
   , orthNeighbours
+  , window
+  , windowContext
+  , Neighbours(..)
   , Neighboring
   , NZipper
   ) where
@@ -30,6 +37,10 @@ import           Data.Coerce
 import           Data.Singletons.Prelude
 import           Data.Singletons.Prelude.List
 import           Control.Lens as L hiding (index)
+import Control.Monad
+import Data.Functor.Identity
+import Data.Bifunctor.Join
+import Data.Bifunctor.Biff
 
 import           Control.Comonad
 import           Control.Comonad.Representable.Store
@@ -113,6 +124,22 @@ window = fromWindow . neighboring . toWindow
   fromWindow :: Grid window (Coord window) -> Grid window (Coord dims)
   fromWindow = fmap coerceCoordDims
 
+newtype Neighbours (window :: [Nat]) a = Neighbours (a, (Grid window (Maybe a)))
+  deriving (Functor, Applicative, Foldable) via Join (Biff (,) Identity (Compose (Grid window) Maybe))
+  deriving Traversable
+
+-- | Given a coordinate generate a grid of size 'window' filled with
+-- coordinates surrounding the given coord. Mostly used internally
+windowContext :: forall window dims.
+                     (Neighboring window, Dimensions window)
+                     => Coord dims
+                     -> Neighbours window (Coord dims)
+windowContext focus = coerce (focus, (window @window @dims focus & imapRep wrapMaybe))
+  where
+    wrapMaybe (coerceCoordDims -> c) a
+      | c == focus = Nothing
+      | otherwise = Just a
+
 class Neighboring dims where
   neighborCoords :: Grid dims (Coord dims)
 
@@ -151,7 +178,6 @@ omitBounds = Compose . fmap wrap
   where
     wrap c | coordInBounds c = Just c
            | otherwise  = Nothing
-
 
 --------------------------------------------------------------------------------
 -- Windowing Shapes
