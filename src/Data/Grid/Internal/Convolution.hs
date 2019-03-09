@@ -32,7 +32,6 @@ import           Data.Foldable
 import           Data.Coerce
 import           Data.Singletons.Prelude
 import           Data.Singletons.Prelude.List
-import           Control.Lens as L hiding (index)
 import Control.Monad
 import Data.Functor.Identity
 import Data.Bifunctor.Join

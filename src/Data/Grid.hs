@@ -22,16 +22,11 @@ module Data.Grid
    -- * Convolution
   , autoConvolute
   , convolute
+  , window
    -- ** Bounds restriction
   , clampBounds
   , wrapBounds
   , omitBounds
-
-  , window
-  , neighbouringWindow
-
-  , NZipper(..)
-  , orthNeighbours
    -- * Permutations
   , transpose
   , permute
@@ -45,7 +40,6 @@ module Data.Grid
   , Dimensions
   , NestedLists
   , Neighboring
-  , Neighbours(..)
   , ValidPermutation
   , Permuted
   ) where
@@ -53,7 +47,6 @@ module Data.Grid
 -- * Grids
 import           Data.Grid.Internal.Grid
 import           Data.Grid.Internal.Nest
-import           Data.Grid.Internal.Shapes
 import           Data.Grid.Internal.Lens
 import           Data.Grid.Internal.Transpose
 import           Data.Grid.Internal.Coord

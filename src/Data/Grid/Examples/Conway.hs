@@ -4,6 +4,7 @@
 module Data.Grid.Examples.Conway where
 
 import Data.Grid
+import Data.Grid.Shapes
 import Data.Foldable
 import Data.List
 import Data.Functor.Compose

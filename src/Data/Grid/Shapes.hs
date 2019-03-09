@@ -4,9 +4,9 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS_GHC -ddump-deriv #-}
 
-module Data.Grid.Internal.Shapes (neighbouringWindow, Neighbours(..), orthNeighbours, NZipper) where
+module Data.Grid.Shapes
+  (neighbouringWindow, Neighbours(..)) where
 
 import GHC.TypeNats
 import Data.Grid.Internal.Grid
@@ -22,18 +22,17 @@ import Data.Singletons.Prelude.List
 import Data.Coerce
 import Data.Function
 import Data.Functor.Rep
-import Control.Lens
 import Data.Proxy
 
---------------------------------------------------------------------------------
--- Windowing Shapes
---------------------------------------------------------------------------------
+-- | Simplifies convolutions where the focus is treated separately than the
+-- neighbours. Typically the 'Grid' will have a 'Nothing' at the focus.
+-- See 'neighbouringWindow'
 newtype Neighbours (window :: [Nat]) a = Neighbours (a, (Grid window (Maybe a)))
     deriving (Functor, Applicative, Foldable) via Join (Biff (,) Identity (Compose (Grid window) Maybe))
     deriving Traversable
 
--- | Given a coordinate generate a grid of size 'window' filled with
--- coordinates surrounding the given coord. Mostly used internally
+-- | A selector for use with 'convolute'. Helpful for situations where the focus of a
+-- convolution
 neighbouringWindow :: forall window dims.
                    (Neighboring window, Dimensions window)
                    => Coord dims

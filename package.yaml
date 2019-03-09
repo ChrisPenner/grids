@@ -43,7 +43,6 @@ dependencies:
 - comonad
 - singletons
 - deepseq
-- lens
 - bifunctors
 
 library:
