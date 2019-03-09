@@ -28,9 +28,9 @@ module Data.Grid
   , omitBounds
 
   , window
-  , windowContext
+  , neighbouringWindow
 
-  , NZipper
+  , NZipper(..)
   , orthNeighbours
    -- * Permutations
   , transpose
@@ -51,10 +51,11 @@ module Data.Grid
   ) where
 
 -- * Grids
-import Data.Grid.Internal.Grid
-import Data.Grid.Internal.Nest
-import Data.Grid.Internal.Lens
-import Data.Grid.Internal.Transpose
-import Data.Grid.Internal.Coord
-import Data.Grid.Internal.Convolution
-import Data.Functor.Rep as Rep
+import           Data.Grid.Internal.Grid
+import           Data.Grid.Internal.Nest
+import           Data.Grid.Internal.Shapes
+import           Data.Grid.Internal.Lens
+import           Data.Grid.Internal.Transpose
+import           Data.Grid.Internal.Coord
+import           Data.Grid.Internal.Convolution
+import           Data.Functor.Rep               as Rep

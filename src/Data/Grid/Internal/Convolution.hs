@@ -16,12 +16,8 @@ module Data.Grid.Internal.Convolution
   , clampBounds
   , wrapBounds
   , omitBounds
-  , orthNeighbours
   , window
-  , windowContext
-  , Neighbours(..)
   , Neighboring
-  , NZipper
   ) where
 
 import           Data.Grid.Internal.Grid
@@ -124,22 +120,6 @@ window = fromWindow . neighboring . toWindow
   fromWindow :: Grid window (Coord window) -> Grid window (Coord dims)
   fromWindow = fmap coerceCoordDims
 
-newtype Neighbours (window :: [Nat]) a = Neighbours (a, (Grid window (Maybe a)))
-  deriving (Functor, Applicative, Foldable) via Join (Biff (,) Identity (Compose (Grid window) Maybe))
-  deriving Traversable
-
--- | Given a coordinate generate a grid of size 'window' filled with
--- coordinates surrounding the given coord. Mostly used internally
-windowContext :: forall window dims.
-                     (Neighboring window, Dimensions window)
-                     => Coord dims
-                     -> Neighbours window (Coord dims)
-windowContext focus = coerce (focus, (window @window @dims focus & imapRep wrapMaybe))
-  where
-    wrapMaybe (coerceCoordDims -> c) a
-      | c == focus = Nothing
-      | otherwise = Just a
-
 class Neighboring dims where
   neighborCoords :: Grid dims (Coord dims)
 
@@ -178,21 +158,3 @@ omitBounds = Compose . fmap wrap
   where
     wrap c | coordInBounds c = Just c
            | otherwise  = Nothing
-
---------------------------------------------------------------------------------
--- Windowing Shapes
---------------------------------------------------------------------------------
-
-data NZipper n a = NZipper a (Grid '[n] ([a], [a]))
-  deriving (Functor, Show, Eq)
-
-orthNeighbours :: forall dims a. (Dimensions dims, KnownNat (Length dims)) => Coord dims -> NZipper (Length dims) (Coord dims)
-orthNeighbours c@(Coord cs) = NZipper c (generate go)
-    where
-      go :: Int -> ([Coord dims], [Coord dims])
-      go n = coerce $ second tail . splitAt (cs !! n) $ do
-        elem <- [0 .. (dimSizes !! n) - 1]
-        pure $ cs & ix n .~ elem
-      dimSizes :: [Int]
-      dimSizes = fromIntegral <$> demote @dims
-      numDims = fromIntegral $ natVal (Proxy @(Length dims))

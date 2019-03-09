@@ -30,7 +30,7 @@ rule' (Neighbours (currentCellAlive,  neighbours)) = (currentCellAlive && living
 step
   :: (Dimensions dims)
   => Grid dims Bool -> Grid dims Bool
-step = convolute (wrapBounds . windowContext @'[3, 3]) rule'
+step = convolute (wrapBounds . neighbouringWindow @'[3, 3]) rule'
 
 glider :: [Coord '[10, 10]]
 glider = Coord <$> [[0, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
