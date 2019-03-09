@@ -1,5 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
-module Data.Grid.Internal.Errors where
+{-# LANGUAGE TypeOperators #-}
+module Data.Grid.Internal.Errors (type (?!), ErrorMessage(..)) where
 
 import Data.Kind
 import GHC.TypeLits

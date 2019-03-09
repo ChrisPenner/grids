@@ -12,21 +12,10 @@ import Data.Functor.Rep
 import Control.Arrow
 import Data.Monoid
 
--- rule :: Grid '[3, 3] Bool -> Bool
--- rule g = (currentCellAlive && livingNeighbours == 2) || livingNeighbours == 3
---   where
---     currentCellAlive = g `index` Coord [1, 1] -- Get the center cell
---     livingNeighbours =
---       (if currentCellAlive
---          then subtract 1
---          else id) .
---       length . filter id $
---       toList g
-
 rule' :: Neighbours window Bool -> Bool
 rule' (Neighbours (currentCellAlive,  neighbours)) = (currentCellAlive && livingNeighbours == 2) || livingNeighbours == 3
   where
-    livingNeighbours = length . filter id . toList . Compose $ neighbours
+    livingNeighbours = length . filter id . toList $ neighbours
 
 step
   :: (Dimensions dims)
