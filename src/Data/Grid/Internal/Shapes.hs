@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -ddump-deriv #-}
 
 module Data.Grid.Internal.Shapes (neighbouringWindow, Neighbours(..), orthNeighbours, NZipper) where
 
@@ -42,26 +43,3 @@ neighbouringWindow focus = coerce (focus, (window @window @dims focus & imapRep 
     wrapMaybe (coerceCoordDims -> c) a
       | c == focus = Nothing
       | otherwise = Just a
-
-data NZipper n a = NZipper a (Grid '[n] ([a], [a]))
-    deriving (Functor, Show, Eq)
-
-orthNeighbours :: forall dims a.
-               (Dimensions dims, KnownNat (Length dims))
-               => Coord dims
-               -> NZipper (Length dims) (Coord dims)
-orthNeighbours c@(Coord cs) = NZipper c (generate go)
-  where
-    go :: Int -> ([Coord dims], [Coord dims])
-    go n =
-      coerce
-      $ second tail.splitAt (cs !! n)
-      $ do
-        elem <- [0 .. (dimSizes !! n) - 1]
-        pure $ cs & ix n .~ elem
-
-    dimSizes :: [Int]
-    dimSizes = fromIntegral <$> demote @dims
-
-    numDims = fromIntegral $ natVal (Proxy @(Length dims))
-
