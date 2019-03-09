@@ -8,7 +8,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Grid.Shapes
-  (neighbouringWindow, Neighbours(..), focus, neighbours) where
+  (neighbouringWindow, Neighbours(..), focus, neighbours, centerCoord) where
 
 import GHC.TypeNats
 import Data.Grid.Internal.Grid
@@ -56,8 +56,13 @@ class Centered (dims :: [Nat]) where
   centerCoord :: Coord dims
 
 type Even (n :: Nat) = Mod n 2 == 0
+
 type Odd (n :: Nat) = Not (Even n)
-type OddC (n :: Nat) = Odd n ?! ShowType n :<>: Text " must be odd"
+
+type OddC (n :: Nat) =
+  Odd n ?! Text "Dimension '"
+           :<>: ShowType n 
+           :<>: Text " must be odd to use 'neighbouring' functions"
 
 instance {-# OVERLAPPING #-} (OddC x, KnownNat x) => Centered '[x] where
   centerCoord = Coord [mid]
