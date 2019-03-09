@@ -23,6 +23,7 @@ import Data.Coerce
 import Data.Function
 import Data.Functor.Rep
 import Data.Proxy
+import Control.Comonad
 
 -- | Simplifies convolutions where the focus is treated separately than the
 -- neighbours. Typically the 'Grid' will have a 'Nothing' at the focus.
@@ -30,6 +31,10 @@ import Data.Proxy
 newtype Neighbours (window :: [Nat]) a = Neighbours (a, (Grid window (Maybe a)))
     deriving (Functor, Applicative, Foldable) via Join (Biff (,) Identity (Compose (Grid window) Maybe))
     deriving Traversable
+
+-- instance Comonad (Neighbours window) where
+--   extract (Neighbours (a, _)) = a
+--   duplicate (Neighbours (a, g)) = 
 
 -- | A selector for use with 'convolute'. Helpful for situations where the focus of a
 -- convolution
