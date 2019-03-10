@@ -43,7 +43,6 @@ dependencies:
 - comonad
 - singletons
 - deepseq
-- bifunctors
 
 library:
   source-dirs: src
