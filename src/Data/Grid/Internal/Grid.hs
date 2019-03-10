@@ -186,16 +186,14 @@ joinGrid (Grid v) = Grid (v >>= toVector)
 -- For example, you can unnest a simple 3x3 as follows:
 --
 -- > splitGrid @'[3] @'[3] myGrid :: Grid '[3] (Grid [3] a)
-splitGrid
-  :: forall outer inner a from
-   . ( from ~ (outer ++ inner)
-     , IsGrid from
-     , IsGrid inner
-     , IsGrid outer
-     , NestedLists from a ~ NestedLists outer (NestedLists inner a)
-     )
-  => Grid from a
-  -> Grid outer (Grid inner a)
+splitGrid :: forall outer inner a from.
+          ( IsGrid from
+          , IsGrid inner
+          , IsGrid outer
+          , NestedLists from a ~ NestedLists outer (NestedLists inner a)
+          )
+          => Grid from a
+          -> Grid outer (Grid inner a)
 splitGrid = fmap fromNestedLists' . fromNestedLists' . toNestedLists
 
 

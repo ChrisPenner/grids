@@ -20,7 +20,6 @@ module Data.Grid.Internal.Coord where
 import           GHC.Exts
 import           GHC.TypeNats                   hiding (Mod)
 import           Data.Proxy
-import           Data.Kind
 import           Unsafe.Coerce
 import           Data.Singletons.Prelude
 import           Data.Grid.Internal.NestedLists
