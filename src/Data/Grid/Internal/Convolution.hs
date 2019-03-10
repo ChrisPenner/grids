@@ -20,28 +20,14 @@ module Data.Grid.Internal.Convolution
   , Neighboring
   ) where
 
-import           Data.Grid.Internal.Grid
-import           Data.Grid.Internal.Coord
-import           Data.Grid.Internal.Nest
-import           Data.Functor.Rep
-import           GHC.TypeNats
-import           Data.Kind
-import           Control.Applicative
-import           Data.Functor.Compose
-import           Data.Foldable
-import           Data.Coerce
-import           Data.Singletons.Prelude
-import           Data.Singletons.Prelude.List
-import Control.Monad
-import Data.Functor.Identity
-import Data.Bifunctor.Join
-import Data.Bifunctor.Biff
-
 import           Control.Comonad
 import           Control.Comonad.Representable.Store
-import           Data.Maybe
-import           Data.Proxy
-import           Data.Bifunctor
+import           Data.Functor.Compose
+import           Data.Functor.Rep
+import           Data.Grid.Internal.Coord
+import           Data.Grid.Internal.Grid
+import           Data.Grid.Internal.Nest
+import           GHC.TypeNats
 
 criticalError :: a
 criticalError = error

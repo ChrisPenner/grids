@@ -8,6 +8,7 @@ import Data.Grid as G
 import Control.Applicative
 import Data.Maybe
 import Data.Functor.Compose
+import Data.Foldable
 
 
 smallGrid :: Grid '[2, 2] Int
@@ -56,6 +57,10 @@ spec = do
       `shouldBe` Just smallGrid
     it "fromList" $ do
       G.fromList [0, 1, 2, 3] `shouldBe` Just smallGrid
+
+    it "fromList'/toList round trip" $ do
+      let g = generate @[5, 5, 5] id
+      G.fromList' (toList g) `shouldBe` g
 
   describe "updates" $ do
     it "(//)"

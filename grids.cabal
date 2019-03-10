@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a7eedc59cf74f98beb7a013d37836f81a33c0856dd2362b674f69650c645a4d5
+-- hash: fc363aaea33ddf640a288d4ed8a183b19eb176fddb94ef0d609738afd59de299
 
 name:           grids
 version:        0.3.0.0
@@ -41,14 +41,14 @@ library
       Data.Grid.Internal.NestedLists
       Data.Grid.Internal.Padding
       Data.Grid.Internal.Pretty
+      Data.Grid.Internal.Shapes
       Data.Grid.Internal.Transpose
-      Data.Grid.Shapes
   other-modules:
       Paths_grids
   hs-source-dirs:
       src
   default-extensions: KindSignatures PolyKinds TypeApplications ScopedTypeVariables TypeOperators TypeFamilies FlexibleInstances FlexibleContexts MultiParamTypeClasses DataKinds GeneralizedNewtypeDeriving DeriveTraversable DeriveFunctor ConstraintKinds
-  ghc-options: -fwarn-redundant-constraints
+  ghc-options: -fwarn-redundant-constraints -Wall
   build-depends:
       adjunctions
     , base >=4.7 && <5

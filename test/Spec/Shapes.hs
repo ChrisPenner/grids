@@ -5,7 +5,6 @@ module Spec.Shapes (spec) where
 import Test.Hspec hiding (focus)
 import qualified Data.Vector as V
 import Data.Grid as G
-import Data.Grid.Shapes as G
 import Control.Applicative
 import Data.Maybe
 import Data.Functor.Compose
@@ -21,12 +20,8 @@ medGrid = generate id
 
 spec :: Spec
 spec = 
-  describe "neighbouringWindow" $ do
-    it "should not change on round trip" $ do
-      let g = convolute (neighbouringWindow @'[3, 3]) focus medGrid
-      g `shouldBe` medGrid
-
-    it "should select the proper neighbours" $ do
-      let g :: Grid [2, 2] Int = convolute (omitBounds . neighbouringWindow @'[3, 3]) (sum . Compose .  neighbours . getCompose) smallGrid
+  describe "partitionFocus" $ do
+    it "should split properly" $ do
+      let g :: Grid [2, 2] Int = autoConvolute @[3, 3] omitBounds (sum . Compose . fmap join . snd . partitionFocus . getCompose) smallGrid
       let sums = fromNestedLists' [[6, 5], [4, 3]]
       g `shouldBe` sums

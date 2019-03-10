@@ -23,6 +23,11 @@ module Data.Grid
   , autoConvolute
   , convolute
   , window
+
+   -- ** Convolution Utils
+  , partitionFocus
+  , centerCoord
+
    -- ** Bounds restriction
   , clampBounds
   , wrapBounds
@@ -46,6 +51,7 @@ module Data.Grid
 
 -- * Grids
 import           Data.Grid.Internal.Grid
+import           Data.Grid.Internal.Shapes
 import           Data.Grid.Internal.Nest
 import           Data.Grid.Internal.Lens
 import           Data.Grid.Internal.Transpose

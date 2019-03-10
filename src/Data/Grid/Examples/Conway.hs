@@ -1,10 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Data.Grid.Examples.Conway where
 
 import Data.Grid
-import Data.Grid.Shapes
 import Data.Foldable
 import Data.List
 import Data.Functor.Compose
@@ -12,15 +12,15 @@ import Data.Functor.Rep
 import Control.Arrow
 import Data.Monoid
 
-rule' :: Neighbours window Bool -> Bool
-rule' (Neighbours (currentCellAlive,  neighbours)) = (currentCellAlive && livingNeighbours == 2) || livingNeighbours == 3
+rule' :: Grid [3, 3] Bool -> Bool
+rule' (partitionFocus -> (currentCellAlive,  neighbours)) = (currentCellAlive && livingNeighbours == 2) || livingNeighbours == 3
   where
-    livingNeighbours = length . filter id . toList $ neighbours
+    livingNeighbours = length . filter id . toList . Compose $ neighbours
 
 step
   :: (Dimensions dims)
   => Grid dims Bool -> Grid dims Bool
-step = convolute (wrapBounds . neighbouringWindow @'[3, 3]) rule'
+step = autoConvolute @[3, 3] wrapBounds rule'
 
 glider :: [Coord '[10, 10]]
 glider = Coord <$> [[0, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
