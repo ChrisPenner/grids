@@ -43,10 +43,11 @@ dependencies:
 - comonad
 - singletons
 - deepseq
+- bifunctors
 
 library:
   source-dirs: src
-  ghc-options: -fwarn-redundant-constraints
+  ghc-options: -fwarn-redundant-constraints -Wall
 
 
 tests:

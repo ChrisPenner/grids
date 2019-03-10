@@ -6,7 +6,6 @@ import           Data.Kind
 import           GHC.TypeNats                  as N
 import           Data.Singletons.Prelude
 import qualified Data.Vector                   as V
-import           Data.List
 import           Data.Grid.Internal.Coord
 
 type family AllC (c :: x -> Constraint) (ts :: [x]) :: Constraint where

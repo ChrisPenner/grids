@@ -1,23 +1,33 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-module Data.Grid.Internal.Convolution where
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DeriveTraversable #-}
 
-import           Data.Grid.Internal.Grid
-import           Data.Grid.Internal.Coord
-import           Data.Grid.Internal.Nest
-import           Data.Functor.Rep
-import           GHC.TypeNats
-import           Data.Kind
-import           Control.Applicative
-import           Data.Functor.Compose
-import           Data.Foldable
-import           Data.Coerce
+
+module Data.Grid.Internal.Convolution 
+  ( autoConvolute
+  , convolute
+  , clampBounds
+  , wrapBounds
+  , omitBounds
+  , window
+  , Neighboring
+  ) where
 
 import           Control.Comonad
 import           Control.Comonad.Representable.Store
-import           Data.Maybe
-import           Data.Proxy
+import           Data.Functor.Compose
+import           Data.Functor.Rep
+import           Data.Grid.Internal.Coord
+import           Data.Grid.Internal.Grid
+import           Data.Grid.Internal.Nest
+import           GHC.TypeNats
 
 criticalError :: a
 criticalError = error
@@ -39,12 +49,12 @@ criticalError = error
 -- window size; the Grid passed to the given function contains the current cell
 -- (in the middle) and all the surrounding cells.
 --
--- Here's an example of computing the average of all neighbouring cells,
+-- Here's an example of computing the average of all neighboring cells,
 -- repeating values at the edge of the grid when indexes are out of bounds
 -- (using 'clampWindow')
 --
 -- > gaussian :: (Dimensions dims) => Grid dims Double -> Grid dims Double
--- > gaussian = autoConvolute clampWindow avg
+-- > gaussian = autoConvolute clampBounds avg
 -- >  where
 -- >   avg :: Grid '[3, 3] Double -> Double
 -- >   avg g = sum g / fromIntegral (length g)
@@ -67,7 +77,7 @@ autoConvolute restrict = convolute (restrict . window @window @dims)
 convolute
   :: forall dims f a b
    . (Functor f, Dimensions dims)
-  => (Coord dims -> f (Coord dims))  -- ^ Build a neighbouring context within a functor from the current coord
+  => (Coord dims -> f (Coord dims))  -- ^ Build a neighboring context within a functor from the current coord
   -> (f a -> b) -- ^ Collapse the context to a single value
   -> Grid dims a -- ^ Starting grid
   -> Grid dims b
@@ -95,64 +105,41 @@ window = fromWindow . neighboring . toWindow
   fromWindow :: Grid window (Coord window) -> Grid window (Coord dims)
   fromWindow = fmap coerceCoordDims
 
--- data Orth a =
---   Orth
---     { up :: a
---     , right :: a
---     , down :: a
---     , left :: a
---     } deriving (Eq, Show, Functor, Traversable, Foldable)
-
--- orthNeighbours :: Coord dims  -> Compose Orth Maybe (Coord dims )
--- orthNeighbours c = Compose
---   (   toMaybe
---   <$> traverse
---         (+)
---         Orth {up = 0 :# (-1), right = 1 :# 0, down = 0 :# 1, left = -1 :# 0}
---         c
---   )
---  where
---   toMaybe c@(x :# y) | not (inBounds x) || not (inBounds y) = Nothing
---                      | otherwise                            = Just c
-
--- orthFromList [up', right', down', left'] =
---   Orth {up = up, right = right', down = down', left = left'}
-
 class Neighboring dims where
-  neighbors :: Grid dims (Coord dims)
+  neighborCoords :: Grid dims (Coord dims)
 
 instance {-# OVERLAPPING #-} (KnownNat n) => Neighboring '[n]  where
-  neighbors = fromList' . fmap (Coord . pure . subtract (numVals `div` 2)) . take numVals $ [0 .. ]
+  neighborCoords = fromList' . fmap (Coord . pure . subtract (numVals `div` 2)) . take numVals $ [0 .. ]
     where
       numVals = gridSize @'[n]
 
 instance (KnownNat n, Neighboring ns) => Neighboring (n:ns) where
-  neighbors = joinGrid (addCoord <$> currentLevelNeighbors)
+  neighborCoords = joinGrid (addCoord <$> currentLevelNeighbors)
     where
       addCoord :: Coord '[n]  -> Grid ns (Coord (n : ns) )
       addCoord c = appendC c <$> nestedNeighbors
       nestedNeighbors :: Grid ns (Coord ns )
-      nestedNeighbors = neighbors
+      nestedNeighbors = neighborCoords
       currentLevelNeighbors :: Grid '[n] (Coord '[n] )
-      currentLevelNeighbors = neighbors
+      currentLevelNeighbors = neighborCoords
 
 neighboring :: (Dimensions dims, Neighboring dims) => Coord dims -> Grid dims (Coord dims)
-neighboring c = (c +) <$> neighbors
+neighboring c = (c +) <$> neighborCoords
 
 -- | Use with 'autoConvolute'; Clamp out-of-bounds coordinates to the nearest in-bounds coord.
-clampWindow
-  :: (Dimensions dims) => Grid window (Coord dims) -> Grid window (Coord dims)
-clampWindow = fmap clampCoord
+clampBounds
+  :: (Dimensions dims, Functor f) => f (Coord dims) -> f (Coord dims)
+clampBounds = fmap clampCoord
 
 -- | Use with 'autoConvolute'; Wrap out-of-bounds coordinates pac-man style to the other side of the grid
-wrapWindow
-  :: (Dimensions dims) => Grid window (Coord dims) -> Grid window (Coord dims)
-wrapWindow = fmap wrapCoord
+wrapBounds
+  :: (Dimensions dims, Functor f) => f (Coord dims) -> f (Coord dims)
+wrapBounds = fmap wrapCoord
 
 -- | Use with 'autoConvolute'; Out of bounds coords become 'Nothing'
-safeWindow
-  :: (Dimensions dims) => Grid window (Coord dims) -> Compose (Grid window) Maybe (Coord dims)
-safeWindow = Compose . fmap wrap
+omitBounds
+  :: (Dimensions dims, Functor f) => f (Coord dims) -> Compose f Maybe (Coord dims)
+omitBounds = Compose . fmap wrap
   where
     wrap c | coordInBounds c = Just c
            | otherwise  = Nothing

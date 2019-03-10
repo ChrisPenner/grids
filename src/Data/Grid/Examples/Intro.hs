@@ -4,12 +4,8 @@
 module Data.Grid.Examples.Intro where
 
 import Data.Grid
-import Data.Maybe
 import Data.Functor.Compose
 import Data.Coerce
-import Data.Foldable
-import Data.Functor.Rep
-import GHC.TypeNats hiding ()
 
 simpleGrid :: Grid '[5, 5] Int
 simpleGrid = generate id
@@ -25,6 +21,9 @@ avg f | null f    = 0
 mx :: Foldable f => f Int -> Int
 mx = maximum
 
+verySmall :: Grid '[2, 2] Int
+verySmall = generate id
+
 small :: Grid '[3, 3] Int
 small = generate id
 
@@ -39,20 +38,20 @@ big :: Grid '[5, 5, 5, 5] Int
 big = generate id
 
 gauss :: (Dimensions dims) => Grid dims Double -> Grid dims Double
-gauss = autoConvolute safeWindow gauss'
+gauss = autoConvolute omitBounds gauss'
  where
   gauss' :: Compose (Grid '[3, 3]) Maybe Double -> Double
   gauss' g = (sum g) / fromIntegral (length g)
 
 clampGauss :: (Dimensions dims) => Grid dims Double -> Grid dims Double
-clampGauss = autoConvolute clampWindow gauss'
+clampGauss = autoConvolute clampBounds gauss'
  where
   gauss' :: Grid '[3, 3] Double -> Double
   gauss' g = sum g / fromIntegral (length g)
 
 
 seeNeighboring :: Grid '[3, 3] a -> Grid '[3, 3] (Grid '[3, 3] (Maybe a))
-seeNeighboring = autoConvolute safeWindow go
+seeNeighboring = autoConvolute omitBounds go
  where
   go :: Compose (Grid '[3, 3]) Maybe a -> Grid '[3, 3] (Maybe a)
   go = getCompose . coerce
@@ -67,5 +66,5 @@ simpleGauss :: Grid '[3, 3] Double
 simpleGauss = gauss doubleGrid
 
 pacmanGauss :: (Dimensions dims) => Grid dims Double -> Grid dims Double
-pacmanGauss = autoConvolute @'[3, 3] wrapWindow gauss'
+pacmanGauss = autoConvolute @'[3, 3] wrapBounds gauss'
   where gauss' g = sum g / fromIntegral (length g)

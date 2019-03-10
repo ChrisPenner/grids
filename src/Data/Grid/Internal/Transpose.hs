@@ -16,9 +16,6 @@ import           Data.Singletons.Prelude.List  as L
 import           Data.Singletons.Prelude.Maybe
 import           Data.Functor.Rep
 import           Data.Vector                   as V
-import           Data.Kind
-import           Data.Maybe
-import           Data.List
 
 type family Permuted (key :: [Nat]) (from :: [Nat]) :: [Nat] where
   Permuted '[] _ = '[]
@@ -26,11 +23,11 @@ type family Permuted (key :: [Nat]) (from :: [Nat]) :: [Nat] where
 
 type ValidPermutation key from =
   (Sort key == EnumFromTo 0 (Length from TL.- 1)) ?!
-    (Text "Malformed permutation hint: " :<>: ShowType key
-                :$$: Text "When permuting matrix of size: " :<>: ShowType from
-                :$$: Text "Key must be a permutation of "  :<>: ShowType (EnumFromTo 0 (Length from TL.- 1))
-                :$$: Text "e.g. the identity permutation for 2x2 is @[0, 1]"
-                :$$: Text "e.g. matrix transpose for 2x2 is @[1, 0]"
+    ('Text "Malformed permutation hint: " ':<>: 'ShowType key
+                ':$$: 'Text "When permuting matrix of size: " ':<>: 'ShowType from
+                ':$$: 'Text "Key must be a permutation of "  ':<>: 'ShowType (EnumFromTo 0 (Length from TL.- 1))
+                ':$$: 'Text "e.g. the identity permutation for 2x2 is @[0, 1]"
+                ':$$: 'Text "e.g. matrix transpose for 2x2 is @[1, 0]"
   )
 
 -- | Permute dimensions of a 'Grid'. This is similar to MatLab's permute
@@ -67,7 +64,6 @@ permute
   -> Grid (Permuted key from) a
 permute (Grid v) = result
  where
-  len = V.length v
   result :: Grid (Permuted key from) a
   result = tabulate
     ((v V.!) . fromEnum  . permuteCoord @invertedKey @from)

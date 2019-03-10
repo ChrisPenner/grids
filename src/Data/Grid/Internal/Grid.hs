@@ -24,11 +24,9 @@ import           Data.Distributive
 import           Data.Functor.Rep
 import qualified Data.Vector                   as V
 import           Data.Proxy
-import           Data.Kind
 import           GHC.TypeNats                  as N
                                                    hiding ( Mod )
 import           Control.Applicative
-import           Data.List
 import           Data.Bifunctor
 import           Data.Maybe
 import           Data.Singletons.Prelude

@@ -1,7 +1,5 @@
 module Data.Grid
-  (
-  -- * Grids
-   Grid(..)
+  ( Grid(..)
    -- * Creation
   , generate
   , Rep.tabulate
@@ -9,57 +7,54 @@ module Data.Grid
   , fromNestedLists'
   , fromList
   , fromList'
-
-  -- * Collapsing
+   -- * Collapsing
   , toNestedLists
-
-  -- * Indexing
+   -- * Indexing
   , Coord(..)
   , coord
   , unconsC
   , appendC
   , Rep.index
-
-  -- * Updating
+   -- * Updating
   , (//)
-
-  -- * Lenses
+   -- * Lenses
   , cell
-
-  -- * Convolution
+   -- * Convolution
   , autoConvolute
   , convolute
+  , window
 
-  -- ** Window restriction
-  , clampWindow
-  , wrapWindow
-  , safeWindow
+   -- ** Convolution Utils
+  , partitionFocus
+  , centerCoord
 
-  -- * Permutations
+   -- ** Bounds restriction
+  , clampBounds
+  , wrapBounds
+  , omitBounds
+   -- * Permutations
   , transpose
   , permute
   , permuteCoord
-
-  -- * Joining
+   -- * Joining
   , joinGrid
   , splitGrid
-
-  -- * Assorted
+   -- * Assorted
   , gridSize
-
-  -- * Typeclasses & Type Families
+   -- * Typeclasses & Type Families
   , Dimensions
   , NestedLists
   , Neighboring
   , ValidPermutation
   , Permuted
-  )
-where
+  ) where
 
+-- * Grids
 import           Data.Grid.Internal.Grid
+import           Data.Grid.Internal.Shapes
 import           Data.Grid.Internal.Nest
 import           Data.Grid.Internal.Lens
 import           Data.Grid.Internal.Transpose
 import           Data.Grid.Internal.Coord
 import           Data.Grid.Internal.Convolution
-import           Data.Functor.Rep as Rep
+import           Data.Functor.Rep               as Rep
