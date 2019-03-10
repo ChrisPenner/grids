@@ -8,9 +8,6 @@ import Data.Grid
 import Data.Foldable
 import Data.List
 import Data.Functor.Compose
-import Data.Functor.Rep
-import Control.Arrow
-import Data.Monoid
 
 rule' :: Grid [3, 3] Bool -> Bool
 rule' (partitionFocus -> (currentCellAlive,  neighbours)) = (currentCellAlive && livingNeighbours == 2) || livingNeighbours == 3

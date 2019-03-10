@@ -6,7 +6,6 @@ module Data.Grid.Internal.Lens where
 import Data.Grid.Internal.Grid
 import Data.Functor.Rep as R
 import Data.Vector as V
-import Data.Proxy
 
 type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
 type Lens' s a  = Lens s s a a
@@ -16,7 +15,7 @@ lens sa sbt afb s = sbt s <$> afb (sa s)
 
 -- | Focus an element of a 'Grid' given its 'Coord'
 cell
-  :: forall ind dims a
+  :: forall dims a
    . (Dimensions dims)
   => Coord dims
   -> Lens' (Grid dims a) a

@@ -13,21 +13,19 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
 
+{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
+
 module Data.Grid.Internal.Coord where
 
 import           GHC.Exts
 import           GHC.TypeNats                      hiding ( Mod )
-import           GHC.TypeLits hiding (natVal, Mod)
 import           Data.Proxy
-import           Data.Kind
 import           Unsafe.Coerce
-import           Data.Coerce
-import           Data.List
 import           Data.Singletons.Prelude
 
 -- | The index type for 'Grid's.
 newtype Coord (dims :: [Nat]) = Coord {unCoord :: [Int]}
-  deriving (Eq)
+  deriving (Eq, Show)
 
 -- | Safely construct a 'Coord' for a given grid size, checking that all
 -- indexes are in range
@@ -51,10 +49,6 @@ instance IsList (Coord dims) where
   type Item (Coord dims) = Int
   fromList = coerce
   toList = coerce
-
-instance Show (Coord dims)
-  where
-    show (Coord cs) = "[" ++ intercalate ", " (show <$> cs) ++ "]"
 
 -- | Get the first index from a 'Coord'
 unconsC :: Coord (n : ns) -> (Int, Coord ns)

@@ -4,15 +4,8 @@
 module Data.Grid.Examples.Intro where
 
 import Data.Grid
-import Data.Maybe
 import Data.Functor.Compose
 import Data.Coerce
-import Data.Foldable
-import Data.Functor.Rep
-import GHC.TypeNats hiding ()
-import Control.Comonad.Representable.Store
-import Control.Comonad
-import Data.Functor.Identity
 
 simpleGrid :: Grid '[5, 5] Int
 simpleGrid = generate id

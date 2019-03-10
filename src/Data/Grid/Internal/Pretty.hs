@@ -14,5 +14,5 @@ instance {-# OVERLAPPABLE #-} (Show a) => PrettyList [[a]] where
 instance (Show a) => PrettyList [[[ a ]]] where
   prettyList ls = "[" ++ intercalate "\n\n," (unlines . overRest (" " ++ ) . lines . prettyList <$> ls) ++ "]"
     where
-      overRest f (l:ls) = l : fmap f ls
-      overRest f ls = ls
+      overRest f (x:xs) = x : fmap f xs
+      overRest _ xs = xs
