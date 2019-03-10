@@ -1,5 +1,4 @@
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 module Data.Grid.Internal.Errors (type (?!), ErrorMessage(..)) where
 
 import Data.Kind
