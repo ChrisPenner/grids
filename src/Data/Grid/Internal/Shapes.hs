@@ -22,7 +22,7 @@ import Data.Functor.Rep
 import Data.Grid.Internal.Errors
 
 partitionFocus :: forall window a.
-               (Centered window, Dimensions window)
+               (Centered window, IsGrid window)
                => Grid window a
                -> (a, Grid window (Maybe a))
 partitionFocus g = (g `index` centerCoord @window, imapRep wrapMaybe g)

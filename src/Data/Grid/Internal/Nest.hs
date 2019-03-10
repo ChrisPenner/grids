@@ -28,9 +28,9 @@ joinGrid (Grid v) = Grid (v >>= toVector)
 splitGrid
   :: forall outer inner a from
    . ( from ~ (outer ++ inner)
-     , Dimensions from
-     , Dimensions inner
-     , Dimensions outer
+     , IsGrid from
+     , IsGrid inner
+     , IsGrid outer
      , NestedLists from a ~ NestedLists outer (NestedLists inner a)
      )
   => Grid from a

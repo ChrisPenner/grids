@@ -37,13 +37,13 @@ med = generate id
 big :: Grid '[5, 5, 5, 5] Int
 big = generate id
 
-gauss :: (Dimensions dims) => Grid dims Double -> Grid dims Double
+gauss :: (IsGrid dims) => Grid dims Double -> Grid dims Double
 gauss = autoConvolute omitBounds gauss'
  where
   gauss' :: Compose (Grid '[3, 3]) Maybe Double -> Double
   gauss' g = (sum g) / fromIntegral (length g)
 
-clampGauss :: (Dimensions dims) => Grid dims Double -> Grid dims Double
+clampGauss :: (IsGrid dims) => Grid dims Double -> Grid dims Double
 clampGauss = autoConvolute clampBounds gauss'
  where
   gauss' :: Grid '[3, 3] Double -> Double
@@ -65,6 +65,6 @@ doubleGrid = fromIntegral <$> small
 simpleGauss :: Grid '[3, 3] Double
 simpleGauss = gauss doubleGrid
 
-pacmanGauss :: (Dimensions dims) => Grid dims Double -> Grid dims Double
+pacmanGauss :: (IsGrid dims) => Grid dims Double -> Grid dims Double
 pacmanGauss = autoConvolute @'[3, 3] wrapBounds gauss'
   where gauss' g = sum g / fromIntegral (length g)

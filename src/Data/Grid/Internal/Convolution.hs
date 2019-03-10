@@ -20,6 +20,7 @@ module Data.Grid.Internal.Convolution
   , Neighboring
   ) where
 
+import           Data.Proxy
 import           Control.Comonad
 import           Control.Comonad.Representable.Store
 import           Data.Functor.Compose
@@ -28,6 +29,7 @@ import           Data.Grid.Internal.Coord
 import           Data.Grid.Internal.Grid
 import           Data.Grid.Internal.Nest
 import           GHC.TypeNats
+import           Data.Grid.Internal.NestedLists
 
 criticalError :: a
 criticalError = error
@@ -53,17 +55,16 @@ criticalError = error
 -- repeating values at the edge of the grid when indexes are out of bounds
 -- (using 'clampWindow')
 --
--- > gaussian :: (Dimensions dims) => Grid dims Double -> Grid dims Double
+-- > gaussian :: (IsGrid dims) => Grid dims Double -> Grid dims Double
 -- > gaussian = autoConvolute clampBounds avg
 -- >  where
 -- >   avg :: Grid '[3, 3] Double -> Double
 -- >   avg g = sum g / fromIntegral (length g)
 autoConvolute
   :: forall window dims f a b
-   . ( Dimensions dims
-     , Dimensions window
+   . ( IsGrid dims
+     , IsGrid window
      , Functor f
-     , Neighboring window
      )
   => (Grid window (Coord dims) -> f (Coord dims)) -- ^ Restrict out of bounds coordinates in some way. Use 'clampWindow', 'wrapWindow' or 'safeWindow'
   -> (f a -> b) -- ^ Collapse the context down to a value
@@ -76,7 +77,7 @@ autoConvolute restrict = convolute (restrict . window @window @dims)
 -- coord, then provides a collapsing function over the same functor.
 convolute
   :: forall dims f a b
-   . (Functor f, Dimensions dims)
+   . (Functor f, IsGrid dims)
   => (Coord dims -> f (Coord dims))  -- ^ Build a neighboring context within a functor from the current coord
   -> (f a -> b) -- ^ Collapse the context to a single value
   -> Grid dims a -- ^ Starting grid
@@ -95,7 +96,7 @@ convolute selectWindow f g =
 -- coordinates surrounding the given coord. Mostly used internally
 window
   :: forall window dims
-   . (Neighboring window, Dimensions window)
+   . (IsGrid window)
   => Coord dims
   -> Grid window (Coord dims)
 window = fromWindow . neighboring . toWindow
@@ -105,13 +106,10 @@ window = fromWindow . neighboring . toWindow
   fromWindow :: Grid window (Coord window) -> Grid window (Coord dims)
   fromWindow = fmap coerceCoordDims
 
-class Neighboring dims where
-  neighborCoords :: Grid dims (Coord dims)
-
-instance {-# OVERLAPPING #-} (KnownNat n) => Neighboring '[n]  where
+instance {-# OVERLAPPING #-} (IsGrid '[n]) => Neighboring '[n]  where
   neighborCoords = fromList' . fmap (Coord . pure . subtract (numVals `div` 2)) . take numVals $ [0 .. ]
     where
-      numVals = gridSize @'[n]
+      numVals = gridSize (Proxy @'[n])
 
 instance (KnownNat n, Neighboring ns) => Neighboring (n:ns) where
   neighborCoords = joinGrid (addCoord <$> currentLevelNeighbors)
@@ -123,22 +121,22 @@ instance (KnownNat n, Neighboring ns) => Neighboring (n:ns) where
       currentLevelNeighbors :: Grid '[n] (Coord '[n] )
       currentLevelNeighbors = neighborCoords
 
-neighboring :: (Dimensions dims, Neighboring dims) => Coord dims -> Grid dims (Coord dims)
+neighboring :: (IsGrid dims) => Coord dims -> Grid dims (Coord dims)
 neighboring c = (c +) <$> neighborCoords
 
 -- | Use with 'autoConvolute'; Clamp out-of-bounds coordinates to the nearest in-bounds coord.
 clampBounds
-  :: (Dimensions dims, Functor f) => f (Coord dims) -> f (Coord dims)
+  :: (IsGrid dims, Functor f) => f (Coord dims) -> f (Coord dims)
 clampBounds = fmap clampCoord
 
 -- | Use with 'autoConvolute'; Wrap out-of-bounds coordinates pac-man style to the other side of the grid
 wrapBounds
-  :: (Dimensions dims, Functor f) => f (Coord dims) -> f (Coord dims)
+  :: (IsGrid dims, Functor f) => f (Coord dims) -> f (Coord dims)
 wrapBounds = fmap wrapCoord
 
 -- | Use with 'autoConvolute'; Out of bounds coords become 'Nothing'
 omitBounds
-  :: (Dimensions dims, Functor f) => f (Coord dims) -> Compose f Maybe (Coord dims)
+  :: (IsGrid dims, Functor f) => f (Coord dims) -> Compose f Maybe (Coord dims)
 omitBounds = Compose . fmap wrap
   where
     wrap c | coordInBounds c = Just c

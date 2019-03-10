@@ -18,10 +18,12 @@
 module Data.Grid.Internal.Coord where
 
 import           GHC.Exts
-import           GHC.TypeNats                      hiding ( Mod )
+import           GHC.TypeNats                   hiding (Mod)
 import           Data.Proxy
+import           Data.Kind
 import           Unsafe.Coerce
 import           Data.Singletons.Prelude
+import           Data.Grid.Internal.NestedLists
 
 -- | The index type for 'Grid's.
 newtype Coord (dims :: [Nat]) = Coord {unCoord :: [Int]}
@@ -95,17 +97,11 @@ instance  (KnownNat n) => Enum (Coord '[n]) where
   toEnum i = Coord [i]
   fromEnum (Coord [i]) = clamp 0 (highestIndex @n) i
 
-instance  (KnownNat x, KnownNat y, SingI rest, Bounded (Coord rest ), Enum (Coord (y:rest) )) => Enum (Coord (x:y:rest) ) where
+instance  (KnownNat x, KnownNat y, Sizable (y:rest), Bounded (Coord rest ), Enum (Coord (y:rest) )) => Enum (Coord (x:y:rest) ) where
   toEnum i | i < 0 = negate $ toEnum (abs i)
   toEnum i | i > fromEnum (maxBound @(Coord (x:y:rest) )) = error "Index out of bounds"
-  toEnum i = (i `div` (gridSize @(y:rest))) :# toEnum (i `mod` gridSize @(y:rest))
-  fromEnum (x :# ys) = (clamp 0 (highestIndex @x) x * gridSize @(y:rest)) + fromEnum ys
-
--- | Get the total size of a 'Grid' of the given dimensions
---
--- > gridSize @'[2, 2] == 4
-gridSize :: forall (dims :: [Nat]) . SingI dims => Int
-gridSize = product . fmap fromIntegral $ demote @dims
+  toEnum i = (i `div` (gridSize $ Proxy @(y:rest))) :# toEnum (i `mod` gridSize (Proxy @(y:rest)))
+  fromEnum (x :# ys) = (clamp 0 (highestIndex @x) x * gridSize (Proxy @(y:rest))) + fromEnum ys
 
 coerceCoordDims :: Coord ns -> Coord ms
 coerceCoordDims = unsafeCoerce

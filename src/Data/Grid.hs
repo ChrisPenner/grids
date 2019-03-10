@@ -41,10 +41,9 @@ module Data.Grid
    -- * Joining
   , joinGrid
   , splitGrid
-   -- * Assorted
-  , gridSize
    -- * Typeclasses & Type Families
-  , Dimensions
+  , IsGrid
+  , Sizable(..)
   , NestedLists
   , Neighboring
   , ValidPermutation
@@ -58,4 +57,5 @@ import           Data.Grid.Internal.Lens
 import           Data.Grid.Internal.Transpose
 import           Data.Grid.Internal.Coord
 import           Data.Grid.Internal.Convolution
+import           Data.Grid.Internal.NestedLists
 import           Data.Functor.Rep               as Rep

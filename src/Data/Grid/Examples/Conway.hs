@@ -15,7 +15,7 @@ rule' (partitionFocus -> (currentCellAlive,  neighbours)) = (currentCellAlive &&
     livingNeighbours = length . filter id . toList . Compose $ neighbours
 
 step
-  :: (Dimensions dims)
+  :: (IsGrid dims)
   => Grid dims Bool -> Grid dims Bool
 step = autoConvolute @[3, 3] wrapBounds rule'
 
@@ -33,6 +33,6 @@ showBool True = '#'
 showBool False = '.'
 
 showGrid
-  :: (Dimensions '[x, y])
+  :: (IsGrid '[x, y])
   => Grid '[x, y] Bool -> String
 showGrid = intercalate "\n" . toNestedLists . fmap showBool

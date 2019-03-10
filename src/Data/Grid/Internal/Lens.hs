@@ -16,7 +16,7 @@ lens sa sbt afb s = sbt s <$> afb (sa s)
 -- | Focus an element of a 'Grid' given its 'Coord'
 cell
   :: forall dims a
-   . (Dimensions dims)
+   . (IsGrid dims)
   => Coord dims
   -> Lens' (Grid dims a) a
 cell c = lens get set

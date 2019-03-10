@@ -2,15 +2,9 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 module Data.Grid.Internal.NestedLists where
 
-import           Data.Kind
-import           GHC.TypeNats                  as N
+import           GHC.TypeNats            as N
 import           Data.Singletons.Prelude
-import qualified Data.Vector                   as V
-import           Data.Grid.Internal.Coord
-
-type family AllC (c :: x -> Constraint) (ts :: [x]) :: Constraint where
-  AllC c '[] = ()
-  AllC c (x:xs) = (c x, AllC c xs)
+import qualified Data.Vector             as V
 
 -- | Computes the level of nesting requried to represent a given grid
 -- dimensionality as a nested list
@@ -31,14 +25,21 @@ chunkVector n v
 
 -- | Represents valid dimensionalities. All non empty lists of Nats have
 -- an instance
-class (AllC KnownNat dims, SingI dims, Enum (Coord dims), Bounded (Coord dims)) => Dimensions  (dims :: [Nat]) where
+class Sizable  (dims :: [Nat]) where
   nestLists :: Proxy dims -> V.Vector a -> NestedLists dims a
   unNestLists :: Proxy dims -> NestedLists dims a -> [a]
 
-instance (KnownNat x) => Dimensions '[x] where
+  -- | Get the total size of a 'Grid' of the given dimensions
+  --
+  -- > gridSize (Proxy @'[2, 2]) == 4
+  gridSize :: Proxy dims -> Int
+
+instance {-# OVERLAPPING #-} KnownNat x => Sizable '[x] where
   nestLists _ = V.toList
   unNestLists _ xs = xs
+  gridSize _ = fromIntegral $ natVal (Proxy @x)
 
-instance (KnownNat x, Bounded (Coord xs), SingI xs, Dimensions (y:xs)) => Dimensions (x:y:xs) where
-  nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (gridSize @(y:xs)) v
+instance {-# OVERLAPPABLE #-} (KnownNat x, Sizable (y:xs)) => Sizable (x:y:xs) where
+  nestLists _ v = nestLists (Proxy @(y:xs)) <$> chunkVector (gridSize $ Proxy @(y:xs)) v
   unNestLists _ xs = concat (unNestLists (Proxy @(y:xs)) <$> xs)
+  gridSize _ = gridSize (Proxy @(y:xs)) * fromIntegral (natVal (Proxy @x))

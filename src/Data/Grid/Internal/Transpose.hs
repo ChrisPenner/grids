@@ -57,8 +57,8 @@ permute
    . ( SingI invertedKey
      , invertedKey ~ InvertKey (EnumFromTo 0 (Length from TL.- 1)) key
      , ValidPermutation key from
-     , Dimensions from 
-     , Dimensions (Permuted key from) 
+     , IsGrid from 
+     , IsGrid (Permuted key from) 
      )
   => Grid from a
   -> Grid (Permuted key from) a
@@ -85,7 +85,7 @@ permuteCoord (Coord cs) = Coord newCoord
 -- | Transpose a 2 dimensional matrix. Equivalent to:
 --
 -- > permute @[1, 0]
-transpose :: (KnownNat x, KnownNat y) => Grid '[x, y] a -> Grid '[y, x] a
+transpose :: (IsGrid '[x, y], IsGrid '[y, x]) => Grid '[x, y] a -> Grid '[y, x] a
 transpose = permute @'[1, 0]
 
 -- | Get the inverse of a permutation pattern, used internally
