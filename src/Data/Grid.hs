@@ -1,5 +1,7 @@
 module Data.Grid
-  ( Grid(..)
+  (
+   -- * Grids
+  Grid(..)
    -- * Creation
   , generate
   , Rep.tabulate
@@ -49,7 +51,6 @@ module Data.Grid
   , Permuted
   ) where
 
--- * Grids
 import           Data.Grid.Internal.Grid
 import           Data.Grid.Internal.Shapes
 import           Data.Grid.Internal.Nest
