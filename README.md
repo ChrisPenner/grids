@@ -22,8 +22,6 @@ Automata**.
 
 All in a typesafe package!
 
-Still working out the best interface for this stuff, feedback is appreciated!
-
 Grids backed by a single contiguous Vector and gain the
 associated performance benefits. Currently only boxed immutable vectors are
 supported, but let me know if you need other variants.
@@ -91,7 +89,6 @@ coordinates you need depends on the shape of the grid.
 `Coord` is really just a wrapping over a list of integers. It's recommended that
 you use `coord` to safely construct `Coord` values, but you can cheat and use 
 the `Coord` constructor or even `OverLoadedLists` if you want to.
- Here's the type of Coord for a few different Grids:
 
 You can get a value out of a grid for a particular index out using `index` from `Data.Functor.Rep`:
 
@@ -115,13 +112,14 @@ indices:
 λ> g ^. cell (Coord [0, 1])
 1
 λ> g & cell (Coord [0, 1]) *~ 1000
-(Grid [[0,1000,2],[3,4,5]])
+(Grid [[0,1000,2]
+      ,[3,4,5]])
 ```
 
 ## Creation
 
 You can generate a grid by providing a function over the integer position in the grid (`generate`) or by providing
-a function over the coordinate position of the cell (`tabulate`). Or of course you can just use `pure`
+a function over the coordinate position of the cell (`tabulate`). Or of course you can just use `pure`.
 
 You can also use the `fromList` and `fromNestedLists` functions which return a
 `Maybe (Grid dims a)` depending on whether the input list is well formed.
@@ -138,3 +136,10 @@ Use either the `cell` lens, or fmap, applicative, traversable.
 For batch updates using the underlying Vector implementation use `(//)`
 
 - `(//) :: Grid dims a -> [(Coord dims, a)] -> Grid dims a`
+
+## Cellular Automata
+See the [haddock docs](http://hackage.haskell.org/package/grids/docs/Data-Grid-Examples-Conway.html) 
+for a guide on building Conway's game of life in only a few lines.
+
+## Convolution
+Coming soon
