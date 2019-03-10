@@ -10,13 +10,12 @@ import Data.List
 import Data.Functor.Compose
 
 rule' :: Grid [3, 3] Bool -> Bool
-rule' (partitionFocus -> (currentCellAlive,  neighbours)) = (currentCellAlive && livingNeighbours == 2) || livingNeighbours == 3
+rule' (partitionFocus -> (currentCellAlive, neighbours)) =
+  (currentCellAlive && livingNeighbours == 2) || livingNeighbours == 3
   where
     livingNeighbours = length . filter id . toList . Compose $ neighbours
 
-step
-  :: (IsGrid dims)
-  => Grid dims Bool -> Grid dims Bool
+step :: (IsGrid dims) => Grid dims Bool -> Grid dims Bool
 step = autoConvolute @[3, 3] wrapBounds rule'
 
 glider :: [Coord '[10, 10]]
@@ -32,7 +31,5 @@ showBool :: Bool -> Char
 showBool True = '#'
 showBool False = '.'
 
-showGrid
-  :: (IsGrid '[x, y])
-  => Grid '[x, y] Bool -> String
+showGrid :: (IsGrid '[x, y]) => Grid '[x, y] Bool -> String
 showGrid = intercalate "\n" . toNestedLists . fmap showBool
