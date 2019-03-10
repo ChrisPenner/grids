@@ -16,6 +16,9 @@ module Data.Grid.Internal.Grid
   , (//)
 
   , Neighboring(..)
+
+  , joinGrid
+  , splitGrid
   )
 where
 
@@ -148,4 +151,51 @@ fromList' = fromJust . fromList
 
 class Neighboring dims where
   neighborCoords :: Grid dims (Coord dims)
+
+
+instance {-# OVERLAPPING #-} (IsGrid '[n]) => Neighboring '[n]  where
+  neighborCoords = fromList' . fmap (Coord . pure . subtract (numVals `div` 2)) . take numVals $ [0 .. ]
+    where
+      numVals = gridSize (Proxy @'[n])
+
+instance (KnownNat n, Neighboring ns) => Neighboring (n:ns) where
+  neighborCoords = joinGrid (addCoord <$> currentLevelNeighbors)
+    where
+      addCoord :: Coord '[n]  -> Grid ns (Coord (n : ns) )
+      addCoord c = appendC c <$> nestedNeighbors
+      nestedNeighbors :: Grid ns (Coord ns )
+      nestedNeighbors = neighborCoords
+      currentLevelNeighbors :: Grid '[n] (Coord '[n] )
+      currentLevelNeighbors = neighborCoords
+
+
+-- | The inverse of 'splitGrid', 
+-- joinGrid will nest a grid from:
+-- > Grid outer (Grid inner a) -> Grid (outer ++ inner) a
+--
+-- For example, you can nest a simple 3x3 from smaller [3] grids as follows:
+--
+-- > joinGrid (myGrid :: Grid [3] (Grid [3] a)) :: Grid '[3, 3] a
+joinGrid :: Grid dims (Grid ns a) -> Grid (dims ++ ns) a
+joinGrid (Grid v) = Grid (v >>= toVector)
+
+-- | The inverse of 'joinGrid', 
+-- splitGrid @outerDims @innerDims will un-nest a grid from:
+-- > Grid (outer ++ inner) a -> Grid outer (Grid inner a)
+--
+-- For example, you can unnest a simple 3x3 as follows:
+--
+-- > splitGrid @'[3] @'[3] myGrid :: Grid '[3] (Grid [3] a)
+splitGrid
+  :: forall outer inner a from
+   . ( from ~ (outer ++ inner)
+     , IsGrid from
+     , IsGrid inner
+     , IsGrid outer
+     , NestedLists from a ~ NestedLists outer (NestedLists inner a)
+     )
+  => Grid from a
+  -> Grid outer (Grid inner a)
+splitGrid = fmap fromNestedLists' . fromNestedLists' . toNestedLists
+
 

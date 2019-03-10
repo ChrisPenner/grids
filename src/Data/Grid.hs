@@ -52,7 +52,6 @@ module Data.Grid
 
 import           Data.Grid.Internal.Grid
 import           Data.Grid.Internal.Shapes
-import           Data.Grid.Internal.Nest
 import           Data.Grid.Internal.Lens
 import           Data.Grid.Internal.Transpose
 import           Data.Grid.Internal.Coord

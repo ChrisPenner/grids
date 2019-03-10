@@ -106,20 +106,6 @@ window = fromWindow . neighboring . toWindow
   fromWindow :: Grid window (Coord window) -> Grid window (Coord dims)
   fromWindow = fmap coerceCoordDims
 
-instance {-# OVERLAPPING #-} (IsGrid '[n]) => Neighboring '[n]  where
-  neighborCoords = fromList' . fmap (Coord . pure . subtract (numVals `div` 2)) . take numVals $ [0 .. ]
-    where
-      numVals = gridSize (Proxy @'[n])
-
-instance (KnownNat n, Neighboring ns) => Neighboring (n:ns) where
-  neighborCoords = joinGrid (addCoord <$> currentLevelNeighbors)
-    where
-      addCoord :: Coord '[n]  -> Grid ns (Coord (n : ns) )
-      addCoord c = appendC c <$> nestedNeighbors
-      nestedNeighbors :: Grid ns (Coord ns )
-      nestedNeighbors = neighborCoords
-      currentLevelNeighbors :: Grid '[n] (Coord '[n] )
-      currentLevelNeighbors = neighborCoords
 
 neighboring :: (IsGrid dims) => Coord dims -> Grid dims (Coord dims)
 neighboring c = (c +) <$> neighborCoords
