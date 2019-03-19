@@ -38,8 +38,8 @@ type Odd (n :: Nat) = Not (Even n)
 
 type OddC (n :: Nat) =
   Odd n ?! 'Text "Dimension '"
-           ':<>: 'ShowType n 
-           ':<>: 'Text " must be odd to use 'neighbouring' functions"
+           ':<>: 'ShowType n
+           ':<>: 'Text " must be ODD to use 'center' based functions"
 
 class Centered (dims :: [Nat]) where
   centerCoord :: Coord dims
@@ -47,9 +47,15 @@ class Centered (dims :: [Nat]) where
 instance {-# OVERLAPPING #-} (OddC x, KnownNat x) => Centered '[x] where
   centerCoord = Coord [mid]
     where
-      mid = (+1) . div 2 . fromIntegral . natVal $ Proxy @x
+      mid = (fromIntegral . natVal $ Proxy @x) `div` 2
 
 instance {-# OVERLAPPABLE #-} (OddC x, KnownNat x, Centered xs) => Centered (x:xs) where
   centerCoord = Coord (mid : coerce (centerCoord @xs))
     where
-      mid = (+1) . div 2 . fromIntegral . natVal $ Proxy @x
+      mid = (fromIntegral . natVal $ Proxy @x) `div` 2
+
+centeredCoords :: forall dims. (Centered dims, IsGrid dims) => Grid dims (Coord dims)
+centeredCoords = tabulate adjustCoord
+    where
+        adjustCoord :: Coord dims -> Coord dims
+        adjustCoord (Coord cs) = Coord $ zipWith subtract (unCoord $ centerCoord @dims) cs
