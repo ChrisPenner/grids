@@ -10,20 +10,21 @@ main :: IO ()
 main =
     defaultMain [ bgroup "convolution"
                          [ bgroup "boxBlur"
-                                  [ bench "nf [3, 3] window over [100, 100]"
-                                        $ nf (benchBlur @[3, 3])
-                                             (doubleGrid @[100, 100])
-                                  , bench "nf [10, 10] window over [100, 100]"
+                                  [
+                                  -- bench "nf [3, 3] window over [100, 100]"
+                                  --       $ nf (benchBlur @[3, 3])
+                                  --            (doubleGrid @[100, 100])
+                                   bench "nf [10, 10] window over [100, 100]"
                                         $ nf (benchBlur @[10, 10])
                                              (doubleGrid @[100, 100])
-                                  , bench "nf [3, 3] window over [500, 500]"
-                                        $ nf (benchBlur @[3, 3])
-                                             (doubleGrid @[500, 500])
+                                  -- , bench "nf [3, 3] window over [200, 200]"
+                                  --       $ nf (benchBlur @[3, 3])
+                                  --            (doubleGrid @[200, 200])
                                   ]
                          , bgroup "sobel"
-                                  [ bench "nf [500, 500]"
+                                  [ bench "nf [200, 200]"
                                         $ nf benchSobel
-                                             (doubleGrid @[500, 500])
+                                             (doubleGrid @[200, 200])
                                   ]
                          ]
                 ]
