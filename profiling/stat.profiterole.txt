@@ -1,0 +1,181 @@
+ TOT   INH   IND
+67.4  25.9  17.1  Data.Vector.Fusion.Util >>= (2254001120)
+92.6  15.9  15.8  Data.Grid.Internal.Grid fmap (0)
+13.5  10.8   6.2  Data.Vector.Fusion.Stream.Monadic fmap (642320896)
+11.8   9.6   1.0  Data.Grid.Internal.Coord fromEnum (306381544)
+12.1   7.9   6.0  Data.Grid.Internal.Coord toEnum (115193848)
+ 7.1   7.1   7.1  Data.Vector basicUnsafeIndexM (893318882)
+99.9   3.4     -  MAIN MAIN (0)
+ 3.4   3.4   3.4  Control.Monad.Primitive primitive (0)
+ 8.5   3.1   2.8  Data.Grid.Internal.Grid index (109593848)
+ 2.9   2.9   2.9  Data.Grid.Internal.Coord highestIndex (787150784)
+ 4.5   2.6    .3  Data.Grid.Internal.Grid * (4480000)
+ 2.3   2.3   2.3  Data.Vector.Mutable basicUnsafeSlice (584272484)
+ 1.7   1.6   1.5  Data.Vector basicUnsafeFreeze (32387450)
+ 4.0   1.4   1.2  Data.Grid.Internal.Grid tabulate (672)
+ 1.9   1.3   1.0  Data.Vector.Mutable basicUnsafeNew (32387450)
+ 1.0    .8     -  Data.Grid.Internal.Grid sum (4480000)
+86.0     -     -  Data.Grid.Internal.Convolution autoConvolute (0)
+
+
+67.4  25.9  17.1  Data.Vector.Fusion.Util >>= (2254001120)
+22.6   3.6   1.8    Control.Comonad.Store.Class experiment (5600000)
+13.2   1.4   1.3      Data.Grid.Internal.Convolution convolute.roundTrip (0)
+ 8.8     -     -        Data.Grid.Internal.Coord toEnum (78233848)
+ 3.0     -     -        Data.Grid.Internal.Coord fromEnum (78233848)
+ 7.7    .5    .5      Control.Comonad.Representable.Store peek (98393848)
+ 7.2     -     -        Data.Grid.Internal.Grid index (98393848)
+12.6     -     -    Data.Vector.Fusion.Stream.Monadic fmap (642320896)
+ 5.5     -    .1    Benchmarks sobel (2240000)
+ 2.8     -     -      Benchmarks sobel.v (2240000)
+ 2.3     -     -        Data.Grid.Internal.Grid * (2240000)
+  .5     -     -        Data.Grid.Internal.Grid sum (2240000)
+ 2.6  -0.1     -      Benchmarks sobel.h (2240000)
+ 2.2     -     -        Data.Grid.Internal.Grid * (2240000)
+  .5     -     -        Data.Grid.Internal.Grid sum (2240000)
+ 4.0    .4    .4    Data.Grid.Internal.Convolution convolute.roundTrip (0)
+ 2.6     -     -      Data.Grid.Internal.Coord toEnum (20160000)
+ 1.0     -     -      Data.Grid.Internal.Coord fromEnum (20160000)
+ 3.3   2.5    .8    Benchmarks boxBlur.gauss' (3360000)
+ 2.4   1.6   1.7      Data.Grid.Internal.Grid foldMap (6720000)
+  .8     -     -        Data.Vector basicUnsafeIndexM (162400000)
+ 1.7   1.7   1.7    Data.Grid.Internal.Coord + (101360000)
+  .6    .6    .5    Data.Grid.Internal.Coord clampCoord (20160000)
+  .1    .1    .1      Data.Grid.Internal.Coord clamp (40320000)
+
+
+92.6  15.9  15.8  Data.Grid.Internal.Grid fmap (0)
+66.8     -     -    Data.Vector.Fusion.Util >>= (2220400448)
+ 4.6     -     -    Data.Vector basicUnsafeIndexM (511565034)
+ 2.1     -     -    Data.Vector.Mutable basicUnsafeSlice (539472484)
+ 1.7     -     -    Data.Vector.Mutable basicUnsafeNew (27907450)
+ 1.5     -     -    Data.Vector basicUnsafeFreeze (27907450)
+
+
+13.5  10.8   6.2  Data.Vector.Fusion.Stream.Monadic fmap (642320896)
+ 7.0   4.3   4.2    Data.Vector.Mutable basicUnsafeWrite (551885034)
+ 2.7     -     -      Control.Monad.Primitive primitive (0)
+
+
+11.8   9.6   1.0  Data.Grid.Internal.Coord fromEnum (306381544)
+10.9   8.7   6.9    Data.Grid.Internal.Coord $m:#.\ (306381544)
+ 2.5   1.5   1.5      Data.Grid.Internal.Coord fromEnum (295181544)
+ 1.0     -     -        Data.Grid.Internal.Coord highestIndex (295181544)
+ 1.2     -     -      Data.Grid.Internal.Coord highestIndex (295181544)
+
+
+12.1   7.9   6.0  Data.Grid.Internal.Coord toEnum (115193848)
+ 3.5     -     -    Data.Grid.Internal.Coord fromEnum (98393848)
+ 2.6   1.9   1.9    Data.Grid.Internal.Coord maxBound (196787696)
+  .7     -     -      Data.Grid.Internal.Coord highestIndex (196787696)
+
+
+ 7.1   7.1   7.1  Data.Vector basicUnsafeIndexM (893318882)
+
+
+99.9   3.4     -  MAIN MAIN (0)
+99.9   3.4     -    Benchmarks main (0)
+70.7   3.0     -      Benchmarks benchBlur (0)
+70.7   3.0     -        Benchmarks boxBlur (0)
+60.0     -     -          Data.Grid.Internal.Convolution autoConvolute (0)
+10.7   3.0    .1          Data.Grid.Internal.Convolution omitBounds (0)
+ 7.7     -     -            Data.Grid.Internal.Grid fmap (0)
+ 2.8   2.8    .2            Data.Grid.Internal.Convolution omitBounds.wrap (81200000)
+ 2.6   2.6   2.6              Data.Grid.Internal.Coord coordInBounds (81200000)
+28.9     -     -      Benchmarks benchSobel (0)
+26.0     -     -        Data.Grid.Internal.Convolution autoConvolute (0)
+ 2.9     -     -        Data.Grid.Internal.Convolution clampBounds (0)
+ 2.9     -     -          Data.Grid.Internal.Grid fmap (0)
+  .4    .4     -      Gauge.Main defaultMain (0)
+  .4    .4     -        Gauge.Main defaultMainWith (0)
+  .4    .4     -          Gauge.Main runMode (1)
+  .4    .4     -            Gauge.Main runMode.runDefault (1)
+  .4    .4     -              Gauge.Monad withConfig (1)
+  .4    .4     -                Gauge.Benchmark runBenchmark (1)
+  .4    .4     -                  Gauge.Benchmark for (1)
+  .4    .4     -                    Gauge.Monad >>= (317)
+  .4    .4     -                      Gauge.Monad >>=.\ (332)
+  .3    .3     -                        Statistics.Regression bootstrapRegress (4)
+  .3    .3     -                          Statistics.Regression bootstrapRegress.\ (32)
+  .2    .2     -                            Statistics.Regression olsRegress (3557)
+  .1    .1     -                              Statistics.Regression olsRegress.coeffs (3660)
+  .1    .1     -                                Statistics.Regression ols (3747)
+  .1    .1     -                                  Statistics.Regression ols.(...) (3817)
+  .1    .1     -                                    Statistics.Matrix.Algorithms qr (3744)
+  .1    .1     -                                      Statistics.Matrix.Algorithms qr.\ (7419)
+  .1    .1     -                                        Statistics.Matrix.Algorithms qr.\.\ (7360)
+  .1    .1     -                        Gauge.Monad >>=.\.\ (332)
+  .1    .1     -                          Gauge.Benchmark runBenchmarkable.runNormal (4)
+  .1    .1     -                            Gauge.Benchmark runBenchmarkable' (4)
+  .1    .1     -                              Gauge.Benchmark runBenchmarkable'.loop (44)
+  .1    .1     -                                Gauge.Source.GC withMetrics (40)
+  .1    .1     -                                  Gauge.Source.RUsage with (0)
+  .1    .1     -                                    Gauge.Source.RUsage with.\ (40)
+  .1    .1     -                                      Gauge.Source.Time withMetrics (40)
+  .1    .1     -                                        Gauge.Source.Time withMetrics.\ (40)
+  .1    .1     -                                          Data.Grid.Internal.Grid rnf (0)
+  .1    .1     -                                            Data.Vector rnf (220)
+  .1    .1    .1                                              Data.Vector rnf.rnfAll (5500220)
+
+
+ 3.4   3.4   3.4  Control.Monad.Primitive primitive (0)
+
+
+ 8.5   3.1   2.8  Data.Grid.Internal.Grid index (109593848)
+ 4.3     -     -    Data.Grid.Internal.Coord fromEnum (109593848)
+ 1.1     -     -    Data.Vector basicUnsafeIndexM (98393848)
+
+
+ 2.9   2.9   2.9  Data.Grid.Internal.Coord highestIndex (787150784)
+
+
+ 4.5   2.6    .3  Data.Grid.Internal.Grid * (4480000)
+ 4.0   2.1   2.2    Data.Grid.Internal.Grid liftA2 (4480000)
+  .9     -     -      Data.Vector.Fusion.Stream.Monadic fmap (0)
+  .4     -     -      Data.Vector basicUnsafeIndexM (80640000)
+  .2     -     -      Data.Vector basicUnsafeFreeze (4480000)
+  .2     -     -      Data.Vector.Mutable basicUnsafeNew (4480000)
+  .2     -     -      Data.Vector.Mutable basicUnsafeSlice (44800000)
+
+
+ 2.3   2.3   2.3  Data.Vector.Mutable basicUnsafeSlice (584272484)
+
+
+ 1.7   1.6   1.5  Data.Vector basicUnsafeFreeze (32387450)
+  .1     -     -    Control.Monad.Primitive primitive (0)
+
+
+ 4.0   1.4   1.2  Data.Grid.Internal.Grid tabulate (672)
+  .8    .1     -    Control.Comonad.Representable.Store runStore (0)
+  .7     -     -      Data.Grid.Internal.Grid index (5600000)
+  .7     -     -    Data.Grid.Internal.Coord toEnum (16800000)
+  .6     -     -    Data.Grid.Internal.Grid index (5600000)
+  .6     -     -    Data.Vector.Fusion.Util >>= (33600672)
+
+
+ 1.9   1.3   1.0  Data.Vector.Mutable basicUnsafeNew (32387450)
+  .6     -     -    Control.Monad.Primitive primitive (0)
+
+
+ 1.0    .8     -  Data.Grid.Internal.Grid sum (4480000)
+  .9    .7    .7    Data.Vector sum (4480000)
+  .2     -     -      Data.Vector basicUnsafeIndexM (40320000)
+
+
+86.0     -     -  Data.Grid.Internal.Convolution autoConvolute (0)
+63.8     -     -    Data.Grid.Internal.Convolution convolute (224)
+63.8     -     -      Data.Grid.Internal.Convolution usingStore (224)
+60.8     -     -        Data.Grid.Internal.Convolution convolute.conv (0)
+60.8     -     -          Control.Comonad extend (224)
+59.8     -     -            Control.Comonad.Representable.Store fmap (224)
+59.8     -     -              Data.Grid.Internal.Grid fmap (0)
+ 1.0     -     -            Data.Grid.Internal.Grid tabulate (224)
+ 1.6     -     -        Data.Grid.Internal.Grid tabulate (224)
+ 1.4     -     -        Control.Comonad.Representable.Store store (224)
+ 1.4     -     -          Control.Comonad.Representable.Store storeT (224)
+ 1.4     -     -            Data.Grid.Internal.Grid tabulate (224)
+22.3    .1    .2    Data.Grid.Internal.Convolution window (0)
+12.1     -     -      Data.Grid.Internal.Convolution neighboring (5600000)
+12.1     -     -        Data.Grid.Internal.Grid fmap (0)
+10.1     -     -      Data.Grid.Internal.Convolution window.fromWindow (0)
+10.1     -     -        Data.Grid.Internal.Grid fmap (0)

@@ -1,0 +1,27 @@
+benchmarking convolution/boxBlur/nf [3, 3] window over [100, 100] ... took 36.73 s, total 56 iterations
+benchmarked convolution/boxBlur/nf [3, 3] window over [100, 100]
+time                 673.9 ms   (652.8 ms .. 723.8 ms)
+                     0.991 R?   (0.966 R? .. 1.000 R?)
+mean                 663.2 ms   (651.4 ms .. 691.1 ms)
+std dev              29.16 ms   (9.755 ms .. 45.97 ms)
+
+benchmarking convolution/boxBlur/nf [10, 10] window over [100, 100] ... took 316.5 s, total 56 iterations
+benchmarked convolution/boxBlur/nf [10, 10] window over [100, 100]
+time                 5.957 s    (5.636 s .. 6.385 s)
+                     0.994 R?   (0.987 R? .. 1.000 R?)
+mean                 5.700 s    (5.622 s .. 5.865 s)
+std dev              184.3 ms   (73.74 ms .. 301.3 ms)
+
+benchmarking convolution/boxBlur/nf [3, 3] window over [500, 500] ... took 145.8 s, total 56 iterations
+benchmarked convolution/boxBlur/nf [3, 3] window over [500, 500]
+time                 2.653 s    (2.539 s .. 2.742 s)
+                     0.995 R?   (0.982 R? .. 1.000 R?)
+mean                 2.640 s    (2.589 s .. 2.709 s)
+std dev              97.87 ms   (43.96 ms .. 156.6 ms)
+
+benchmarking convolution/sobel/nf [500, 500] ... took 192.5 s, total 56 iterations
+benchmarked convolution/sobel/nf [500, 500]
+time                 3.541 s    (3.313 s .. 3.759 s)
+                     0.992 R?   (0.978 R? .. 0.999 R?)
+mean                 3.488 s    (3.406 s .. 3.606 s)
+std dev              156.6 ms   (110.6 ms .. 199.5 ms)
