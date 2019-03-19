@@ -21,13 +21,7 @@ main =
                                              (doubleGrid @[500, 500])
                                   ]
                          , bgroup "sobel"
-                                  [ bench "nf [100, 100]"
-                                        $ nf benchSobel
-                                             (doubleGrid @[100, 100])
-                                  , bench "nf [10, 10] window over [100, 100]"
-                                        $ nf benchSobel
-                                             (doubleGrid @[100, 100])
-                                  , bench "nf [3, 3] window over [500, 500]"
+                                  [ bench "nf [500, 500]"
                                         $ nf benchSobel
                                              (doubleGrid @[500, 500])
                                   ]
