@@ -29,6 +29,7 @@ module Data.Grid
    -- ** Convolution Utils
   , partitionFocus
   , centerCoord
+  , usingStore
 
    -- ** Bounds restriction
   , clampBounds

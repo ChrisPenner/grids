@@ -10,13 +10,14 @@
 {-# LANGUAGE DeriveTraversable #-}
 
 
-module Data.Grid.Internal.Convolution 
+module Data.Grid.Internal.Convolution
   ( autoConvolute
   , convolute
   , clampBounds
   , wrapBounds
   , omitBounds
   , window
+  , usingStore
   , Neighboring
   ) where
 
@@ -26,10 +27,6 @@ import           Data.Functor.Compose
 import           Data.Functor.Rep
 import           Data.Grid.Internal.Coord
 import           Data.Grid.Internal.Grid
-
-criticalError :: a
-criticalError = error
-  "Something went wrong, please report this issue to the maintainer of grids"
 
 -- | Perform a computation based on the context surrounding a cell
 -- Good for doing things like Linear Image Filters (e.g. gaussian blur) or
@@ -79,11 +76,9 @@ convolute
   -> Grid dims a -- ^ Starting grid
   -> Grid dims b
 convolute selectWindow f g =
-  let s = store (index g) criticalError
-      convoluted :: Store (Grid dims) b
-      convoluted     = extend (f . experiment (fmap roundTrip . selectWindow)) s
-      (tabulator, _) = runStore convoluted
-  in  tabulate tabulator
+  let conv :: Store (Grid dims) a -> Store (Grid dims) b
+      conv     = extend (f . experiment (fmap roundTrip . selectWindow))
+   in usingStore g conv
  where
   roundTrip :: Coord dims -> Coord dims
   roundTrip = toEnum . fromEnum
@@ -123,3 +118,10 @@ omitBounds = Compose . fmap wrap
   where
     wrap c | coordInBounds c = Just c
            | otherwise  = Nothing
+
+-- | Perform an operation over the 'Store' representation of a Grid
+usingStore :: (IsGrid dims, IsGrid dims')
+           => Grid dims a
+           -> (Store (Grid dims) a -> Store (Grid dims') b)
+           -> Grid dims' b
+usingStore g f = tabulate . fst . runStore . f $ store (index g) (toEnum 0)
