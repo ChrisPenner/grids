@@ -2,6 +2,7 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Data.Grid.Internal.Grid
   ( Grid(..)
@@ -23,7 +24,7 @@ module Data.Grid.Internal.Grid
   )
 where
 
-import Data.Kind
+import           Data.Kind
 import           Data.Grid.Internal.NestedLists
 import           Data.Grid.Internal.Coord
 import           Data.Grid.Internal.Pretty
@@ -37,6 +38,7 @@ import           Data.Bifunctor
 import           Data.Maybe
 import           Data.Singletons.Prelude
 import           Control.DeepSeq
+import           Data.Coerce
 
 type family AllC (c :: x -> Constraint) (ts :: [x]) :: Constraint where
   AllC c '[] = ()
@@ -51,6 +53,10 @@ type IsGrid dims =
   , Enum (Coord dims)
   , Bounded (Coord dims)
   , Neighboring dims
+  , Functor (NestedC V.Vector dims)
+  , Foldable (NestedC V.Vector dims)
+  , Traversable (NestedC V.Vector dims)
+  , Applicative (NestedC V.Vector dims)
   )
 
 -- | An grid of arbitrary dimensions.
@@ -61,8 +67,14 @@ type IsGrid dims =
 -- > fromNestedLists [[0,1,2],
 -- >                  [3,4,5]]
 newtype Grid (dims :: [Nat]) a =
-  Grid  {toVector :: V.Vector a}
-  deriving (Eq, Functor, Foldable, Traversable, NFData)
+  Grid  {toVector :: NestedC V.Vector dims a}
+  --
+deriving instance (Eq (NestedC V.Vector dims a)) => Eq (Grid dims a)
+deriving instance (NFData (NestedC V.Vector dims a)) => NFData (Grid dims a)
+deriving instance (Functor (NestedC V.Vector dims)) => Functor (Grid dims)
+deriving instance (Foldable (NestedC V.Vector dims)) => Foldable (Grid dims)
+deriving instance (Traversable (NestedC V.Vector dims)) => Traversable (Grid dims)
+
 
 instance (PrettyList (Nested [] dims a), IsGrid dims, Show (Nested [] dims a)) => Show (Grid dims a) where
   show g = "fromNestedLists \n" ++ (unlines . fmap ("  " ++ ) . lines $ prettyList (toNestedLists g))

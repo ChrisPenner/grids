@@ -5,6 +5,7 @@ module Data.Grid.Internal.NestedLists where
 import           GHC.TypeNats            as N
 import           Data.Singletons.Prelude
 import qualified Data.Vector             as V
+import Data.Functor.Compose
 
 -- | Computes the level of nesting requried to represent a given grid
 -- dimensionality as a nested list
@@ -14,6 +15,10 @@ import qualified Data.Vector             as V
 type family Nested (f :: * -> *) (dims :: [Nat])  a :: * where
   Nested _ '[] a = a
   Nested f (_:xs) a = f (Nested f xs a)
+
+type family NestedC (f :: * -> *) (dims :: [Nat]) :: * -> * where
+  NestedC f (_:'[]) = f
+  NestedC f (_:x:xs) = Compose f (NestedC f (x:xs))
 
 chunkVector :: forall a . Int -> V.Vector a -> [V.Vector a]
 chunkVector n v
