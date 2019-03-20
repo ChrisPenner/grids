@@ -9,11 +9,11 @@ import qualified Data.Vector             as V
 -- | Computes the level of nesting requried to represent a given grid
 -- dimensionality as a nested list
 --
--- > NestedLists [2, 3] Int == [[Int]]
--- > NestedLists [2, 3, 4] Int == [[[Int]]]
-type family NestedLists (dims :: [Nat]) a where
-  NestedLists '[] a = a
-  NestedLists (_:xs) a = [NestedLists xs a]
+-- > Nested [2, 3] Int == [[Int]]
+-- > Nested [2, 3, 4] Int == [[[Int]]]
+type family Nested (f :: * -> *) (dims :: [Nat])  a :: * where
+  Nested _ '[] a = a
+  Nested f (_:xs) a = f (Nested f xs a)
 
 chunkVector :: forall a . Int -> V.Vector a -> [V.Vector a]
 chunkVector n v
@@ -26,8 +26,8 @@ chunkVector n v
 -- | Represents valid dimensionalities. All non empty lists of Nats have
 -- an instance
 class Sizable  (dims :: [Nat]) where
-  nestLists :: Proxy dims -> V.Vector a -> NestedLists dims a
-  unNestLists :: Proxy dims -> NestedLists dims a -> [a]
+  nestLists :: Proxy dims -> V.Vector a -> Nested [] dims a
+  unNestLists :: Proxy dims -> Nested [] dims a -> [a]
 
   -- | Get the total size of a 'Grid' of the given dimensions
   --

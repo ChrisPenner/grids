@@ -1,12 +1,13 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 
 module Data.Grid.Internal.Grid
   ( Grid(..)
   , IsGrid
   , Coord
-  , NestedLists
+  , Nested
   , generate
   , toNestedLists
   , fromNestedLists
@@ -63,7 +64,7 @@ newtype Grid (dims :: [Nat]) a =
   Grid  {toVector :: V.Vector a}
   deriving (Eq, Functor, Foldable, Traversable, NFData)
 
-instance (PrettyList (NestedLists dims a), IsGrid dims, Show (NestedLists dims a)) => Show (Grid dims a) where
+instance (PrettyList (Nested [] dims a), IsGrid dims, Show (Nested [] dims a)) => Show (Grid dims a) where
   show g = "fromNestedLists \n" ++ (unlines . fmap ("  " ++ ) . lines $ prettyList (toNestedLists g))
 
 instance (IsGrid dims, Semigroup a) => Semigroup (Grid dims a) where
@@ -102,10 +103,10 @@ generate f = Grid $ V.generate (gridSize $ Proxy @dims) f
 -- > toNestedLists (G.generate id :: Grid [2, 3] Int)
 -- > [[0,1,2],[3,4,5]]
 toNestedLists
-  :: forall dims a . (IsGrid dims) => Grid dims a -> NestedLists dims a
+  :: forall dims a . (IsGrid dims) => Grid dims a -> Nested [] dims a
 toNestedLists (Grid v) = nestLists (Proxy @dims) v
 
--- | Turn a nested list structure into a Grid if the list is well formed. 
+-- | Turn a nested list structure into a Grid if the list is well formed.
 -- Required list nesting increases for each dimension
 --
 -- > fromNestedLists [[0,1,2],[3,4,5]] :: Maybe (Grid [2, 3] Int)
@@ -115,13 +116,13 @@ toNestedLists (Grid v) = nestLists (Proxy @dims) v
 fromNestedLists
   :: forall dims a
    . IsGrid dims
-  => NestedLists dims a
+  => Nested [] dims a
   -> Maybe (Grid dims a)
 fromNestedLists = fromList . unNestLists (Proxy @dims)
 
 -- | Partial variant of 'fromNestedLists' which errors on malformed input
 fromNestedLists'
-  :: forall dims a . IsGrid dims => NestedLists dims a -> Grid dims a
+  :: forall dims a . IsGrid dims => Nested [] dims a -> Grid dims a
 fromNestedLists' = fromJust . fromNestedLists
 
 -- | Convert a list into a Grid or fail if not provided the correct number of
@@ -169,7 +170,7 @@ instance (KnownNat n, Neighboring ns) => Neighboring (n:ns) where
       currentLevelNeighbors = neighborCoords
 
 
--- | The inverse of 'splitGrid', 
+-- | The inverse of 'splitGrid',
 -- joinGrid will nest a grid from:
 -- > Grid outer (Grid inner a) -> Grid (outer ++ inner) a
 --
@@ -179,7 +180,7 @@ instance (KnownNat n, Neighboring ns) => Neighboring (n:ns) where
 joinGrid :: Grid dims (Grid ns a) -> Grid (dims ++ ns) a
 joinGrid (Grid v) = Grid (v >>= toVector)
 
--- | The inverse of 'joinGrid', 
+-- | The inverse of 'joinGrid',
 -- splitGrid @outerDims @innerDims will un-nest a grid from:
 -- > Grid (outer ++ inner) a -> Grid outer (Grid inner a)
 --
@@ -190,7 +191,7 @@ splitGrid :: forall outer inner a from.
           ( IsGrid from
           , IsGrid inner
           , IsGrid outer
-          , NestedLists from a ~ NestedLists outer (NestedLists inner a)
+          , Nested [] from a ~ Nested [] outer (Nested [] inner a)
           )
           => Grid from a
           -> Grid outer (Grid inner a)

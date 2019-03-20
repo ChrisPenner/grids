@@ -45,7 +45,7 @@ module Data.Grid
    -- * Typeclasses & Type Families
   , IsGrid
   , Sizable(..)
-  , NestedLists
+  , Nested
   , Neighboring
   , ValidPermutation
   , Permuted
