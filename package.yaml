@@ -43,6 +43,7 @@ dependencies:
 - comonad
 - singletons
 - deepseq
+- massiv
 
 library:
   source-dirs: src

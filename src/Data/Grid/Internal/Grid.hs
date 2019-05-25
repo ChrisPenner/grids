@@ -1,6 +1,9 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Data.Grid.Internal.Grid
   ( Grid(..)
@@ -22,19 +25,22 @@ module Data.Grid.Internal.Grid
   )
 where
 
-import Data.Kind
+import           Data.Kind
 import           Data.Grid.Internal.NestedLists
 import           Data.Grid.Internal.Coord
+import           Data.Grid.Internal.Ix
 import           Data.Grid.Internal.Pretty
 import           Data.Distributive
 import           Data.Functor.Rep
 import qualified Data.Vector                    as V
+import qualified Data.Massiv.Array              as A
 import           Data.Proxy
 import           GHC.TypeNats                   as N hiding (Mod)
 import           Control.Applicative
 import           Data.Bifunctor
 import           Data.Maybe
 import           Data.Singletons.Prelude
+import           Data.Singletons.Prelude.List
 import           Control.DeepSeq
 
 type family AllC (c :: x -> Constraint) (ts :: [x]) :: Constraint where
@@ -50,7 +56,11 @@ type IsGrid dims =
   , Enum (Coord dims)
   , Bounded (Coord dims)
   , Neighboring dims
+  , A.Index (A.IxN (Length dims))
+  , ToIndex dims
   )
+
+type GridRep dims = A.Array A.B (A.IxN (Length dims))
 
 -- | An grid of arbitrary dimensions.
 --
@@ -60,8 +70,17 @@ type IsGrid dims =
 -- > fromNestedLists [[0,1,2],
 -- >                  [3,4,5]]
 newtype Grid (dims :: [Nat]) a =
-  Grid  {toVector :: V.Vector a}
-  deriving (Eq, Functor, Foldable, Traversable, NFData)
+  Grid  { toVector :: GridRep dims a }
+  -- deriving ( Functor, Applicative, Foldable) via A.Array A.D (A.Ix (Length dims))
+  -- deriving (Eq, NFData) via A.Array A.D (A.Ix (Length dims)) a
+
+deriving instance (IsGrid dims) => Functor (Grid dims)
+deriving  instance (IsGrid dims) => Applicative (Grid dims)
+deriving  instance (IsGrid dims) => Foldable (Grid dims)
+
+-- instance (A.Index (A.IxN (Length dims)), A.Mutable A.D (A.IxN (Length dims)) b) => Traversable (Grid dims) where
+--     traverse f (Grid arr) = Grid <$> A.traverseA f arr
+--     sequence (Grid arr) = Grid <$> A.traverseA id arr
 
 instance (PrettyList (NestedLists dims a), IsGrid dims, Show (NestedLists dims a)) => Show (Grid dims a) where
   show g = "fromNestedLists \n" ++ (unlines . fmap ("  " ++ ) . lines $ prettyList (toNestedLists g))
@@ -72,17 +91,19 @@ instance (IsGrid dims, Semigroup a) => Semigroup (Grid dims a) where
 instance (IsGrid dims, Monoid a) => Monoid (Grid dims a) where
   mempty = pure mempty
 
-instance (IsGrid dims) => Applicative (Grid dims) where
-  pure a = tabulate (const a)
-  liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
+
+-- instance (IsGrid dims) => Applicative (Grid dims) where
+--   pure a = tabulate (const a)
+--   liftA2 f (Grid v) (Grid u) = Grid $ V.zipWith f v u
 
 instance (IsGrid dims) => Distributive (Grid dims) where
   distribute = distributeRep
 
 instance (IsGrid dims) => Representable (Grid dims) where
-  type Rep (Grid dims) = Coord dims
-  index (Grid v) c = v V.! fromEnum c
-  tabulate f = Grid $ V.generate (fromIntegral $ gridSize (Proxy @dims)) (f . toEnum  . fromIntegral)
+  type Rep (Grid dims) = A.IxN (Length dims)
+  index (Grid v) c = v A.! c
+  tabulate f = Grid $ A.makeArray A.Par (sizeAsIndex @dims) f
+  -- tabulate f = Grid $ A.makeArray A.Par (fromIntegral $ gridSize (Proxy @dims)) (f . toEnum  . fromIntegral)
 
 instance (Num n, IsGrid dims) => Num (Grid dims n) where
   (+)  = liftA2 (+)
@@ -105,7 +126,7 @@ toNestedLists
   :: forall dims a . (IsGrid dims) => Grid dims a -> NestedLists dims a
 toNestedLists (Grid v) = nestLists (Proxy @dims) v
 
--- | Turn a nested list structure into a Grid if the list is well formed. 
+-- | Turn a nested list structure into a Grid if the list is well formed.
 -- Required list nesting increases for each dimension
 --
 -- > fromNestedLists [[0,1,2],[3,4,5]] :: Maybe (Grid [2, 3] Int)
@@ -169,7 +190,7 @@ instance (KnownNat n, Neighboring ns) => Neighboring (n:ns) where
       currentLevelNeighbors = neighborCoords
 
 
--- | The inverse of 'splitGrid', 
+-- | The inverse of 'splitGrid',
 -- joinGrid will nest a grid from:
 -- > Grid outer (Grid inner a) -> Grid (outer ++ inner) a
 --
@@ -179,7 +200,7 @@ instance (KnownNat n, Neighboring ns) => Neighboring (n:ns) where
 joinGrid :: Grid dims (Grid ns a) -> Grid (dims ++ ns) a
 joinGrid (Grid v) = Grid (v >>= toVector)
 
--- | The inverse of 'joinGrid', 
+-- | The inverse of 'joinGrid',
 -- splitGrid @outerDims @innerDims will un-nest a grid from:
 -- > Grid (outer ++ inner) a -> Grid outer (Grid inner a)
 --
