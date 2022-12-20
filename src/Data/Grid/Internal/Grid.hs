@@ -34,8 +34,8 @@ import           GHC.TypeNats                   as N hiding (Mod)
 import           Control.Applicative
 import           Data.Bifunctor
 import           Data.Maybe
-import           Data.Singletons.Prelude
 import           Control.DeepSeq
+import           Prelude.Singletons
 
 type family AllC (c :: x -> Constraint) (ts :: [x]) :: Constraint where
   AllC c '[] = ()

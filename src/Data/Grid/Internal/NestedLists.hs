@@ -3,8 +3,8 @@
 module Data.Grid.Internal.NestedLists where
 
 import           GHC.TypeNats            as N
-import           Data.Singletons.Prelude
 import qualified Data.Vector             as V
+import           Prelude.Singletons
 
 -- | Computes the level of nesting requried to represent a given grid
 -- dimensionality as a nested list
