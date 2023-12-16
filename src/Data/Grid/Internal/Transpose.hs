@@ -11,11 +11,11 @@ import           Data.Grid.Internal.Errors
 import           Data.Grid.Internal.Coord
 import           GHC.TypeNats
 import           GHC.TypeLits                  as TL
-import           Data.Singletons.Prelude
-import           Data.Singletons.Prelude.List  as L
-import           Data.Singletons.Prelude.Maybe
+import           Data.List.Singletons  as L
+import           Data.Maybe.Singletons
 import           Data.Functor.Rep
 import           Data.Vector                   as V
+import           Prelude.Singletons
 
 type family Permuted (key :: [Nat]) (from :: [Nat]) :: [Nat] where
   Permuted '[] _ = '[]

@@ -17,10 +17,10 @@ module Data.Grid.Internal.Shapes
 import GHC.TypeNats
 import Data.Grid.Internal.Grid
 import Data.Grid.Internal.Coord
-import Data.Singletons.Prelude
 import Data.Coerce
 import Data.Functor.Rep
 import Data.Grid.Internal.Errors
+import Prelude.Singletons
 
 partitionFocus :: forall window a.
                (Centered window, IsGrid window)

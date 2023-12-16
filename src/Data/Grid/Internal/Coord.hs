@@ -21,8 +21,8 @@ import           GHC.Exts
 import           GHC.TypeNats                   hiding (Mod)
 import           Data.Proxy
 import           Unsafe.Coerce
-import           Data.Singletons.Prelude
 import           Data.Grid.Internal.NestedLists
+import           Prelude.Singletons
 
 -- | The index type for 'Grid's.
 newtype Coord (dims :: [Nat]) = Coord {unCoord :: [Int]}

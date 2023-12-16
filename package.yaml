@@ -42,6 +42,7 @@ dependencies:
 - adjunctions
 - comonad
 - singletons
+- singletons-base
 - deepseq
 
 library:
